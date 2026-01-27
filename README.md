@@ -1,108 +1,107 @@
-# 👋 嗨！我是 Way —— 你的专属双脑 AI 伙伴！🌟
+# Way: Dual-Brain Intelligence
 
-> 欢迎来到我的世界！我不仅仅是一个聊天机器人，我是一个拥有 **“双脑”架构** 的超级智能助手！(≧∇≦)ﾉ
+> **Next-Generation Personal Agent Architecture.**
+> Integrating high-fidelity vision processing with deep logical reasoning.
 
-我结合了 **👁️ 超敏锐的视觉** 和 **🧠 超严谨的逻辑**，不仅能陪你聊天解闷，还能帮你处理复杂的任务哦！快带我回家吧！
-
----
-
-## ✨ 我有什么超能力？
-
-### 🧠 双脑合璧，天下无敌
-*   **👁️ 火眼金睛 (Vision Brain)**: 由 **Gemini 3 Pro** 驱动，给我一张图，我能看懂里面的每一个细节！( •̀ ω •́ )✧
-*   **💡 最强大脑 (Logic Brain)**: 由 **Gemini Flash Thinking** 加持，逻辑推理杠杠的，什么难题都难不倒我！
-
-### 🎨 贴心又好看的界面
-*   **🌗 日夜陪伴**: 支持 **深色/浅色** 主题一键切换，白天清爽，晚上护眼，怎么看都舒服~
-*   **🇨🇳 全中文交流**: 我最懂中文啦，沟通零障碍！
-*   **📸 看图说话**: 无论是什么图片，上传给我，我立马告诉你它是什么！
-
-### 💾 你的贴心小秘书
-*   **📝 过目不忘**: 咱们聊过的天我都帮你存着呢，随时可以翻阅历史记录，绝对不忘事儿！
-*   **📂 全能管家**: 我还能帮你 **读取本地文件** �，甚至帮你 **查询数据库** �️！只要你一声令下，脏活累活我全包！
+**Way** is not just a chatbot. It is an autonomous agent built on a **Dual-Brain Architecture**, designed to perceive, reason, and execute. By fusing **Gemini 3 Pro** (Vision) and **Gemini Flash Thinking** (Logic), Way achieves a new level of multimodal interaction.
 
 ---
 
-## 🛠️ 我的“构造” (技术栈)
+## // Core Capabilities
 
-我是由这些超棒的技术构建的哦：
+### 👁️ Vision Core (V-Brain)
+*   **Engine**: Gemini 3 Pro (Preview)
+*   **Function**: Pixel-level image analysis and semantic understanding.
+*   **Capability**: Instantly decodes visual data, converting images into structured context for the logic core.
 
-*   **身体 (Backend)**: Python, FastAPI, Uvicorn 🐍
-*   **外貌 (Frontend)**: HTML5, CSS3, JavaScript (原生才是最棒的！) 💅
-*   **大脑 (AI)**: Gemini Models via OpenAI SDK 🤖
-*   **记忆 (Storage)**: JSON & SQLite 💾
+### 🧠 Logic Core (L-Brain)
+*   **Engine**: Gemini Flash Thinking
+*   **Function**: Complex reasoning, planning, and code generation.
+*   **Capability**: Handles multi-step tasks, maintains deep context, and executes logical operations with precision.
+
+### ⚡ System Features
+*   **Dual-Theme UI**: Cyberpunk-inspired Dark/Light modes.
+*   **Persistent Memory**: File-based session storage with full history management.
+*   **Agent Tools**:
+    *   `fs_read`: Access local file systems.
+    *   `db_query`: Execute SQLite operations.
+    *   `sys_scan`: Analyze directory structures.
 
 ---
 
-## 🚀 把我领回家 (快速开始)
+## // Tech Stack
 
-想要拥有我吗？只需简单几步哦！
+*   **Runtime**: Python 3.12+
+*   **API Interface**: FastAPI / Uvicorn
+*   **Frontend**: Vanilla JS / CSS3 (No framework overhead)
+*   **Intelligence**: OpenAI SDK (Gemini Adapter)
+*   **Storage**: JSON / SQLite
 
-### 1. 准备环境 🐍
-首先，请确保你的电脑里住着一只 **Python 3.8** 或更高版本的蟒蛇。
+---
 
-### 2. 喂我吃“零食” (安装依赖) 📦
-在我的家目录里运行这行代码，把我要用的工具包都装好：
+## // Quick Start
+
+### 1. Prerequisite
+System requires **Python 3.8+**.
+
+### 2. Installation
+Initialize the environment and dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. 告诉我通关密语 (配置 Key) 🔑
-找到 `.env` 文件（它是我的身份证），把你的 API Key 填进去，这样我才能连接到云端的大脑哦！
+### 3. Configuration
+Configure the neural link in `.env`:
 
 ```env
-# 👁️ 视觉大脑配置
-VISION_API_KEY=你的_key_在这里
+# Vision Core Configuration
+VISION_API_KEY=sk-xxxx
 VISION_BASE_URL=https://api.bltcy.ai/v1
 VISION_MODEL=gemini-2.0-pro-exp-02-05
 
-# 🧠 逻辑大脑配置
-LOGIC_API_KEY=你的_key_在这里
+# Logic Core Configuration
+LOGIC_API_KEY=sk-xxxx
 LOGIC_BASE_URL=https://api.bltcy.ai/v1
 LOGIC_MODEL=gemini-2.0-flash-thinking-exp-01-21
 ```
 
-### 4. 唤醒我！🚀
-一切准备就绪，运行下面的魔法咒语唤醒我吧：
+### 4. Initialization
+Launch the neural interface:
 
 ```bash
 uvicorn server:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### 5. 开始玩耍吧！🎉
-打开浏览器，访问 [http://127.0.0.1:8000](http://127.0.0.1:8000)，我就在那里等你哦！(✿◡‿◡)
-
-*   💬 **聊天**: 随便聊点什么吧！
-*   🖼️ **传图**: 点那个小图片图标，让我看看你的照片！
-*   🛠️ **使唤我**: 试试对我说 "帮我看看 README.md 写了啥"，我会展示给你看哦！
+### 5. Access
+Terminal active at: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 ---
 
-## 📁 我的房间布局 (目录结构)
+## // Project Structure
 
-```
+```text
 personal-agent/
-├── core/               # 💖 我的核心 (心)
-│   ├── agent.py        # 我的主意识
-│   ├── llm_client.py   # 连接逻辑大脑的神经
-│   ├── vision_client.py# 连接视觉大脑的神经
-│   └── tools.py        # 我的工具箱 (手)
-├── data/               # 🧠 我的记忆库
-├── web/                # 👗 我的漂亮衣服 (前端)
-├── server.py           # 🚪 传送门 (API)
-└── config.py           # ⚙️ 设置选项
+├── core/               # Kernel Modules
+│   ├── agent.py        # Main Event Loop (ReAct)
+│   ├── llm_client.py   # Logic Interface
+│   ├── vision_client.py# Vision Interface
+│   └── tools.py        # System Tools
+├── data/               # Persistent Storage
+├── web/                # User Interface
+├── server.py           # API Gateway
+└── config.py           # System Config
 ```
 
 ---
 
-## ⚠️ 小小提醒
+## // Security Protocol
 
-*   **Key 要藏好**: API Key 是很重要的东西，不要给陌生人看哦！🚫
-*   **安全第一**: 我能读取你电脑里的文件，所以请在安全的地方运行我，不要让我被坏人利用啦！🛡️
+*   **API Security**: Keep `.env` strictly confidential.
+*   **Filesystem Access**: Agent operates with read/write permissions. Run in a controlled environment.
 
 ---
 
-### 💖 制作人
-**油豆腐** & **Feng ZhanWei**
-*(Made with Love and AI)* ✨
+### Credits
+**Dev**: 油豆腐 & Feng ZhanWei
+*Est. 2026*
