@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人智能代理</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fas fa-robot"></i> 智能助理 Way
+        </div>
+        
+        <div class="sidebar-actions">
+             <button id="new-chat-btn" class="action-btn">
+                <i class="fas fa-plus"></i> 新建对话
+             </button>
+        </div>
+
+        <div class="history-container">
+            <div class="history-label">历史记录</div>
+            <div class="history-list" id="history-list">
+                <!-- History Items will be loaded here -->
+            </div>
+        </div>
+        
+        <div class="status-panel">
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span>系统在线</span>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <div class="status-item">
+                    <i class="fas fa-brain" style="color: var(--accent-dim); margin-right: 10px;"></i>
+                    <span>逻辑核心</span>
+                </div>
+                <div class="model-info">Gemini Flash Thinking</div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="status-item">
+                    <i class="fas fa-eye" style="color: var(--accent-dim); margin-right: 10px;"></i>
+                    <span>视觉核心</span>
+                </div>
+                <div class="model-info">Gemini 3 Pro</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="theme-btn" title="切换主题">
+            <i class="fas fa-sun"></i>
+        </button>
+
+        <div class="chat-container" id="chat-container">
+            <!-- Messages will appear here -->
+            <div class="message agent">
+                我是Way，你的智能agent，我可以帮您实现您的需求。
+            </div>
+        </div>
+
+        <div class="input-area">
+            <img id="image-preview" class="image-preview" alt="上传预览">
+            <div class="input-wrapper">
+                <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                <button class="icon-btn" onclick="document.getElementById('image-upload').click()" title="上传图片">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <textarea id="user-input" placeholder="输入指令或问题..." rows="1"></textarea>
+                <button class="icon-btn" id="send-btn" title="发送">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
