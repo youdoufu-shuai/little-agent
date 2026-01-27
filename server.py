@@ -23,17 +23,17 @@ app.mount("/static", StaticFiles(directory="web"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    with open("web/index.html", "r") as f:
+    with open("web/index.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/style.css")
 async def get_css():
-    with open("web/style.css", "r") as f:
+    with open("web/style.css", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read(), media_type="text/css")
 
 @app.get("/app.js")
 async def get_js():
-    with open("web/app.js", "r") as f:
+    with open("web/app.js", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read(), media_type="application/javascript")
 
 class ChatRequest(BaseModel):
