@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 from typing import List, Dict, Any, Optional
+from PIL import Image, ImageDraw, ImageFont
 
 def read_file(file_path: str) -> str:
     """
@@ -16,10 +17,6 @@ def read_file(file_path: str) -> str:
     try:
         if not os.path.exists(file_path):
             return f"Error: File '{file_path}' does not exist."
-        
-        # Simple security check to prevent reading outside of allowed areas if needed
-        # For a personal agent, we might allow full access or restrict to home/project
-        # defaulting to full access as requested.
         
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
@@ -77,6 +74,65 @@ def query_sqlite(db_path: str, query: str) -> str:
     except Exception as e:
         return f"Error executing query: {str(e)}"
 
+def generate_image(prompt: str, filename: str) -> str:
+    """
+    Generates a simple image based on a prompt and saves it to web/images/.
+    
+    Args:
+        prompt: The text description or content for the image.
+        filename: The filename to save (e.g., "image.png").
+        
+    Returns:
+        The URL path to the generated image or error message.
+    """
+    try:
+        # Ensure web/images exists
+        output_dir = os.path.join(os.getcwd(), "web", "images")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            
+        # Create a simple image
+        width, height = 512, 512
+        # Generate a background color based on prompt length (pseudo-random)
+        r = (len(prompt) * 15) % 255
+        g = (len(prompt) * 35) % 255
+        b = (len(prompt) * 55) % 255
+        color = (r, g, b)
+        
+        img = Image.new('RGB', (width, height), color=color)
+        d = ImageDraw.Draw(img)
+        
+        # Text wrapping and drawing
+        # Try to load a font
+        try:
+             # Try common font locations on macOS
+             font_path = "/System/Library/Fonts/Helvetica.ttc"
+             if not os.path.exists(font_path):
+                 font = ImageFont.load_default()
+             else:
+                 font = ImageFont.truetype(font_path, 40)
+        except:
+             font = ImageFont.load_default()
+             
+        # Simple text drawing (centered-ish)
+        text = prompt
+        # If text is too long, truncate for the demo
+        if len(text) > 50:
+            text = text[:47] + "..."
+            
+        d.text((50, 200), text, fill=(255, 255, 255), font=font)
+        d.text((50, 250), "(AI Generated)", fill=(200, 200, 200), font=font)
+        
+        # Save file
+        filepath = os.path.join(output_dir, filename)
+        img.save(filepath)
+        
+        # Return the relative path for web access
+        return f"/static/images/{filename}"
+        
+    except Exception as e:
+        return f"Error generating image: {str(e)}"
+
 # Tool Definitions for LLM
 TOOLS_SCHEMA = [
     {
@@ -133,11 +189,33 @@ TOOLS_SCHEMA = [
                 "required": ["db_path", "query"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_image",
+            "description": "Generate an image based on a text prompt. Use this when the user asks to draw or generate an image.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "The description of the image to generate."
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "The filename to save the image as (e.g., 'creation.png')."
+                    }
+                },
+                "required": ["prompt", "filename"]
+            }
+        }
     }
 ]
 
 AVAILABLE_TOOLS = {
     "read_file": read_file,
     "list_directory": list_directory,
-    "query_sqlite": query_sqlite
+    "query_sqlite": query_sqlite,
+    "generate_image": generate_image
 }
