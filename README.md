@@ -3,7 +3,7 @@
 > **次世代个人 Agent 架构。**
 > 融合高保真视觉处理与深度逻辑推理。
 
-**Way** 不仅仅是一个聊天机器人。它是一个构建在 **双脑架构 (Dual-Brain Architecture)** 之上的自主 Agent，旨在感知、推理和执行。通过融合 **Gemini 3 Pro** (视觉) 和 **Gemini Flash Thinking** (逻辑)，Way 实现了多模态交互的新高度。
+**Way** 不仅仅是一个聊天机器人。它是一个构建在 **双层架构 ** 之上的自主 Agent，旨在感知、推理和执行。通过融合 **Gemini 3 Pro** (视觉) 和 **Gemini Flash Thinking** (逻辑)，Way 实现了多模态交互的新高度（使用的是柏拉图api，你也可以换成别的）。
 
 ---
 
@@ -58,12 +58,12 @@ pip install -r requirements.txt
 # 视觉核心配置 (Vision Core)
 VISION_API_KEY=sk-xxxx
 VISION_BASE_URL=https://api.bltcy.ai/v1
-VISION_MODEL=gemini-2.0-pro-exp-02-05
+VISION_MODEL=自己选
 
 # 逻辑核心配置 (Logic Core)
 LOGIC_API_KEY=sk-xxxx
 LOGIC_BASE_URL=https://api.bltcy.ai/v1
-LOGIC_MODEL=gemini-2.0-flash-thinking-exp-01-21
+LOGIC_MODEL=自己选
 ```
 
 ### 4. 启动核心
