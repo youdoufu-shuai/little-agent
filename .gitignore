@@ -17,3 +17,6 @@ ENV/
 
 # Data
 data/sessions/
+
+# Generated Content
+web/images/
