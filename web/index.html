@@ -72,7 +72,7 @@
     <div class="sidebar">
         <div class="brand">
             <img id="sidebar-logo" src="static/images/logo_dark_mode.png" alt="Way Agent" class="brand-logo">
-            <span>智能助理 Way</span>
+            <span id="agent-name-display">智能助理 Way</span>
         </div>
         
         <div class="sidebar-actions">
@@ -244,10 +244,6 @@
                     <div id="table-data-container" style="flex: 1; overflow: auto; background: rgba(0,0,0,0.2); border-radius: 5px;">
                         <!-- Table Data -->
                         <div style="padding: 20px; color: #888;">请选择左侧表以查看数据</div>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <textarea id="sql-query-input" placeholder="输入 SQL 查询..." rows="2" style="width: 100%; padding: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color);"></textarea>
-                        <button id="run-query-btn" class="primary-btn" style="margin-top: 5px; width: auto; padding: 5px 15px;">运行查询</button>
                     </div>
                 </div>
             </div>

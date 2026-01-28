@@ -102,9 +102,20 @@ def query_mysql(query: str, host: str, user: str, password: str, database: Optio
         
         with connection:
             with connection.cursor() as cursor:
-                cursor.execute(query)
-                result = cursor.fetchall()
-                return json.dumps(result, ensure_ascii=False, default=str)
+                affected_rows = cursor.execute(query)
+                
+                # Check if it's a read query
+                query_stripped = query.strip().upper()
+                if query_stripped.startswith(('SELECT', 'SHOW', 'DESCRIBE', 'EXPLAIN')):
+                    result = cursor.fetchall()
+                    return json.dumps(result, ensure_ascii=False, default=str)
+                else:
+                    connection.commit()
+                    return json.dumps({
+                        "status": "success", 
+                        "rows_affected": affected_rows,
+                        "message": "Query executed successfully."
+                    }, ensure_ascii=False)
     except Exception as e:
         return f"Error executing MySQL query: {str(e)}"
 

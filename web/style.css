@@ -589,7 +589,7 @@ body {
     border-radius: 24px; /* Pill shape */
     padding: 8px 16px;
     display: flex;
-    align-items: flex-end;
+    align-items: flex-end; /* Revert to flex-end for correct multi-line behavior */
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -609,7 +609,8 @@ textarea {
     font-family: var(--font-main);
     font-size: 1rem;
     resize: none;
-    padding: 12px;
+    padding: 8px 12px; /* Adjusted padding for vertical alignment */
+    margin-bottom: 4px; /* Align with send button which has margin-bottom: 4px */
     max-height: 200px;
     outline: none;
     line-height: 1.5;

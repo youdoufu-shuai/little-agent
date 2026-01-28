@@ -49,9 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentImage = null;
     let currentSessionId = null;
+    let currentAgentName = 'Way Agent';
 
-    // Load History on Start
-    loadHistory();
+    // Initialize: Update Brand Name first, then Load History
+    (async () => {
+        await updateBrandName();
+        loadHistory();
+    })();
 
     // Theme Switching Logic
     let isLightMode = initLightMode;
@@ -100,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // New Chat Button
     newChatBtn.addEventListener('click', () => {
         currentSessionId = null;
-        chatContainer.innerHTML = '<div class="message agent">系统初始化完成。双脑架构已上线。今天我能为您做些什么？</div>';
+        chatContainer.innerHTML = '';
+        appendMessage('agent', '系统初始化完成。双脑架构已上线。今天我能为您做些什么？');
         // Clear active class from history
         document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
     });
@@ -124,8 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeDbViewerModal = dbViewerModal.querySelector('.close-modal');
     const tablesList = document.getElementById('tables-list');
     const tableDataContainer = document.getElementById('table-data-container');
-    const sqlQueryInput = document.getElementById('sql-query-input');
-    const runQueryBtn = document.getElementById('run-query-btn');
     const currentTableNameDisplay = document.getElementById('current-table-name');
     
     // New DB Config Integration
@@ -251,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     div.querySelector('.activate-btn').addEventListener('click', async () => {
                         await fetch(`/api/personas/${p.id}/activate`, { method: 'PUT' });
                         loadPersonas();
+                        updateBrandName();
                         // Update UI hint if needed, or just let user close modal
                         alert(`已切换到人设：${p.name}`);
                     });
@@ -412,15 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
         executeDbQuery(config, query);
     }
 
-    runQueryBtn.addEventListener('click', () => {
-        const config = getDbConfig();
-        if (currentDatabase) config.database = currentDatabase;
-        
-        const query = sqlQueryInput.value.trim();
-        if (!query) return;
-        executeDbQuery(config, query);
-    });
-
     async function executeDbQuery(config, query) {
         if (!config) return;
         tableDataContainer.innerHTML = '<div style="padding:20px;">查询中...</div>';
@@ -515,7 +510,6 @@ document.addEventListener('DOMContentLoaded', () => {
     userInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
-        if (this.value === '') this.style.height = '24px';
     });
 
     // Handle Enter key
@@ -618,7 +612,8 @@ document.addEventListener('DOMContentLoaded', () => {
                    }
                 });
             } else {
-                 chatContainer.innerHTML = '<div class="message agent">暂无消息。</div>';
+                 chatContainer.innerHTML = '';
+                 appendMessage('agent', '暂无消息。');
             }
             scrollToBottom();
         } catch (error) {
@@ -720,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let contentHtml = '';
         if (role === 'agent') {
             const logoSrc = isLightMode ? LOGO_LIGHT : LOGO_DARK;
-            contentHtml = `<div class="msg-header"><img src="${logoSrc}" class="agent-avatar"> Way Agent</div>`;
+            contentHtml = `<div class="msg-header"><img src="${logoSrc}" class="agent-avatar"> ${currentAgentName}</div>`;
         } else {
             contentHtml = `<div class="msg-header">User <svg class="icon"><use href="#icon-user"></use></svg></div>`;
         }
@@ -793,7 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const logoSrc = isLightMode ? LOGO_LIGHT : LOGO_DARK;
         // Use new CSS typing indicator
         msgDiv.innerHTML = `
-            <div class="msg-header"><img src="${logoSrc}" class="agent-avatar"> Way Agent</div>
+            <div class="msg-header"><img src="${logoSrc}" class="agent-avatar"> ${currentAgentName}</div>
             <div class="typing-indicator">
                 <div class="typing-dot"></div>
                 <div class="typing-dot"></div>
@@ -813,5 +808,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function scrollToBottom() {
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function updateBrandName() {
+        try {
+            const res = await fetch('/api/personas');
+            const personas = await res.json();
+            const activePersona = personas.find(p => p.is_active);
+            const nameDisplay = document.getElementById('agent-name-display');
+            
+            if (activePersona) {
+                currentAgentName = activePersona.name;
+                
+                // Update Sidebar
+                if (nameDisplay) {
+                    nameDisplay.textContent = `智能助理 ${activePersona.name}`;
+                }
+
+                // Update Existing Messages in Chat Window
+                const agentHeaders = document.querySelectorAll('.message.agent .msg-header');
+                agentHeaders.forEach(header => {
+                    const img = header.querySelector('img');
+                    if (img) {
+                        // Preserve the avatar, update the name
+                        const avatarSrc = img.src;
+                        const avatarClass = img.className;
+                        header.innerHTML = `<img src="${avatarSrc}" class="${avatarClass}"> ${currentAgentName}`;
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Failed to update brand name:', e);
+        }
     }
 });
