@@ -2,6 +2,9 @@ import os
 import sqlite3
 import pymysql
 import json
+import requests
+from openai import OpenAI
+from config import Config
 from typing import List, Dict, Any, Optional
 from PIL import Image, ImageDraw, ImageFont
 
@@ -121,7 +124,8 @@ def query_mysql(query: str, host: str, user: str, password: str, database: Optio
 
 def generate_image(prompt: str, filename: str) -> str:
     """
-    Generates a simple image based on a prompt and saves it to web/images/.
+    Generates an image based on a prompt using the configured API, 
+    saving it to web/images/. Falls back to local placeholder if API fails.
     
     Args:
         prompt: The text description or content for the image.
@@ -130,13 +134,53 @@ def generate_image(prompt: str, filename: str) -> str:
     Returns:
         The URL path to the generated image or error message.
     """
+    output_dir = os.path.join(os.getcwd(), "web", "images")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    filepath = os.path.join(output_dir, filename)
+    
+    # 1. Try to generate using the API (Real Image Generation)
     try:
-        # Ensure web/images exists
-        output_dir = os.path.join(os.getcwd(), "web", "images")
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        # Use LOGIC_API_KEY as default for generation capabilities
+        api_key = Config.LOGIC_API_KEY or Config.VISION_API_KEY
+        base_url = Config.LOGIC_BASE_URL
+        
+        if api_key:
+            client = OpenAI(
+                api_key=api_key,
+                base_url=base_url
+            )
             
-        # Create a simple image
+            # Use dall-e-3 if available, or fall back to dall-e-2 or model specific logic
+            # For bltcy.ai (Gemini wrapper), we might need to be specific, but standard OpenAI client usually works
+            # with standard model names if mapped correctly by provider.
+            response = client.images.generate(
+                model="gemini-3-pro-image-preview", # Use user specified model
+                prompt=prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+            )
+            
+            if response.data and response.data[0].url:
+                image_url = response.data[0].url
+                
+                # Download the image
+                img_data = requests.get(image_url).content
+                with open(filepath, 'wb') as f:
+                    f.write(img_data)
+                    
+                return f"/static/images/{filename}"
+                
+    except Exception as e:
+        print(f"API Image Generation failed: {e}")
+        # Proceed to fallback...
+
+    try:
+        # 2. Fallback: Create a simple placeholder image (Local)
+        print("Falling back to local placeholder generation...")
+        
         width, height = 512, 512
         # Generate a background color based on prompt length (pseudo-random)
         r = (len(prompt) * 15) % 255
@@ -166,10 +210,10 @@ def generate_image(prompt: str, filename: str) -> str:
             text = text[:47] + "..."
             
         d.text((50, 200), text, fill=(255, 255, 255), font=font)
-        d.text((50, 250), "(AI Generated)", fill=(200, 200, 200), font=font)
+        d.text((50, 250), "(AI Generated - Placeholder)", fill=(200, 200, 200), font=font)
+        d.text((50, 300), "(API Failed)", fill=(200, 200, 200), font=font)
         
         # Save file
-        filepath = os.path.join(output_dir, filename)
         img.save(filepath)
         
         # Return the relative path for web access
