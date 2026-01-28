@@ -621,7 +621,7 @@ textarea::placeholder {
 
 .icon-btn {
     background: var(--input-bg);
-    border: 1px solid transparent;
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
     padding: 10px;
     margin-bottom: 4px;
