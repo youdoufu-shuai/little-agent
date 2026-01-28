@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import pymysql
 import json
 from typing import List, Dict, Any, Optional
 from PIL import Image, ImageDraw, ImageFont
@@ -73,6 +74,39 @@ def query_sqlite(db_path: str, query: str) -> str:
         return json.dumps(results, ensure_ascii=False, default=str)
     except Exception as e:
         return f"Error executing query: {str(e)}"
+
+def query_mysql(query: str, host: str, user: str, password: str, database: str, port: int = 3306) -> str:
+    """
+    Executes a SQL query on a MySQL database.
+    
+    Args:
+        query: The SQL query to execute.
+        host: Database host.
+        user: Database user.
+        password: Database password.
+        database: Database name.
+        port: Database port (default 3306).
+        
+    Returns:
+        Query results as a JSON string.
+    """
+    try:
+        connection = pymysql.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            port=port,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        
+        with connection:
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                result = cursor.fetchall()
+                return json.dumps(result, ensure_ascii=False, default=str)
+    except Exception as e:
+        return f"Error executing MySQL query: {str(e)}"
 
 def generate_image(prompt: str, filename: str) -> str:
     """
@@ -193,6 +227,43 @@ TOOLS_SCHEMA = [
     {
         "type": "function",
         "function": {
+            "name": "query_mysql",
+            "description": "Execute a SQL query on a MySQL database. Requires connection details provided in the context.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The SQL query to execute."
+                    },
+                    "host": {
+                        "type": "string",
+                        "description": "Database host."
+                    },
+                    "user": {
+                        "type": "string",
+                        "description": "Database user."
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Database password."
+                    },
+                    "database": {
+                        "type": "string",
+                        "description": "Database name."
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "Database port (default 3306)."
+                    }
+                },
+                "required": ["query", "host", "user", "password", "database"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "generate_image",
             "description": "Generate an image based on a text prompt. Use this when the user asks to draw or generate an image.",
             "parameters": {
@@ -217,5 +288,6 @@ AVAILABLE_TOOLS = {
     "read_file": read_file,
     "list_directory": list_directory,
     "query_sqlite": query_sqlite,
+    "query_mysql": query_mysql,
     "generate_image": generate_image
 }

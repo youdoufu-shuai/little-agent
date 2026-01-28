@@ -25,6 +25,7 @@ class PersonalAgent:
         chat_id = message.get("chat_id")
         user_text = message.get("text", "")
         image_url = message.get("image")
+        db_config = message.get("db_config")
 
         # Ensure session exists
         if not session_id:
@@ -65,7 +66,7 @@ class PersonalAgent:
         # Construct messages for LLM
         system_prompt = {
             "role": "system", 
-            "content": "你是一个智能个人助手。请始终使用中文回答用户的问题。利用你的视觉和逻辑能力为用户提供帮助。你可以读取本地文件、查询SQLite数据库，以及生成图像。"
+            "content": "你是一个智能个人助手。请始终使用中文回答用户的问题。利用你的视觉和逻辑能力为用户提供帮助。你可以读取本地文件、查询SQLite和MySQL数据库，以及生成图像。"
         }
         
         # Use last 20 turns (increased for tool context)

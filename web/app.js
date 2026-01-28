@@ -36,6 +36,50 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
     });
 
+    // DB Config Modal Logic
+    const dbConfigBtn = document.getElementById('db-config-btn');
+    const dbModal = document.getElementById('db-modal');
+    const closeDbModal = dbModal.querySelector('.close-modal');
+    const saveDbBtn = document.getElementById('save-db-btn');
+
+    // Load saved config
+    const savedDbConfig = localStorage.getItem('db_config');
+    if (savedDbConfig) {
+        const config = JSON.parse(savedDbConfig);
+        document.getElementById('db-host').value = config.host || 'localhost';
+        document.getElementById('db-port').value = config.port || 3306;
+        document.getElementById('db-user').value = config.user || 'root';
+        document.getElementById('db-password').value = config.password || '';
+        document.getElementById('db-name').value = config.database || '';
+    }
+
+    dbConfigBtn.addEventListener('click', () => {
+        dbModal.style.display = 'block';
+    });
+
+    closeDbModal.addEventListener('click', () => {
+        dbModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === dbModal) {
+            dbModal.style.display = 'none';
+        }
+    });
+
+    saveDbBtn.addEventListener('click', () => {
+        const config = {
+            host: document.getElementById('db-host').value,
+            port: parseInt(document.getElementById('db-port').value),
+            user: document.getElementById('db-user').value,
+            password: document.getElementById('db-password').value,
+            database: document.getElementById('db-name').value
+        };
+        localStorage.setItem('db_config', JSON.stringify(config));
+        dbModal.style.display = 'none';
+        alert('数据库配置已保存');
+    });
+
     // Auto-resize textarea
     userInput.addEventListener('input', function() {
         this.style.height = 'auto';
@@ -166,6 +210,12 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('session_id', currentSessionId);
         }
         
+        // Get DB Config
+        const dbConfig = localStorage.getItem('db_config');
+        if (dbConfig) {
+            formData.append('db_config', dbConfig);
+        }
+        
         if (currentImage) {
             formData.append('file', currentImage);
         }
@@ -182,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // For JSON endpoint
             const payload = { text: text };
             if (currentSessionId) payload.session_id = currentSessionId;
+            if (dbConfig) payload.db_config = JSON.parse(dbConfig);
             
             options = {
                 method: 'POST',
