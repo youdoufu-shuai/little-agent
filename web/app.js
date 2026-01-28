@@ -136,7 +136,90 @@ document.addEventListener('DOMContentLoaded', () => {
     const dbConfigPanel = document.getElementById('db-config-panel');
     const saveConnectDbBtn = document.getElementById('save-connect-db-btn');
     const refreshDbsBtn = document.getElementById('refresh-dbs-btn');
+    const testConnectionBtn = document.getElementById('test-connection-btn');
     
+    // --- Settings Modal Logic ---
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsModal = settingsModal.querySelector('.close-modal');
+    const allowReadToggle = document.getElementById('allow-read-toggle');
+    const allowedPathsInput = document.getElementById('allowed-paths-input');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+
+    // Default Settings
+    const DEFAULT_FILE_CONFIG = {
+        allow_read: true,
+        allowed_paths: []
+    };
+
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.style.display = 'block';
+            loadSettings();
+        });
+    }
+
+    if (closeSettingsModal) {
+        closeSettingsModal.addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+    }
+
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', () => {
+            saveSettings();
+            settingsModal.style.display = 'none';
+            // Optional: show a toast or alert, but for now we just close it
+            // alert('设置已保存');
+        });
+    }
+
+    function loadSettings() {
+        const saved = localStorage.getItem('file_config');
+        let config = DEFAULT_FILE_CONFIG;
+        if (saved) {
+            try {
+                config = JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to parse file settings', e);
+            }
+        }
+        
+        // Ensure defaults if keys are missing
+        if (config.allow_read === undefined) config.allow_read = true;
+        if (!config.allowed_paths) config.allowed_paths = [];
+
+        allowReadToggle.checked = config.allow_read;
+        allowedPathsInput.value = (config.allowed_paths || []).join('\n');
+    }
+
+    function saveSettings() {
+        const allowRead = allowReadToggle.checked;
+        const pathsText = allowedPathsInput.value.trim();
+        const allowedPaths = pathsText 
+            ? pathsText.split('\n').map(p => p.trim()).filter(p => p.length > 0)
+            : [];
+            
+        const config = {
+            allow_read: allowRead,
+            allowed_paths: allowedPaths
+        };
+        
+        localStorage.setItem('file_config', JSON.stringify(config));
+    }
+
+    function getFileConfig() {
+         const saved = localStorage.getItem('file_config');
+         if (saved) {
+             try {
+                 return JSON.parse(saved);
+             } catch (e) {
+                 return DEFAULT_FILE_CONFIG;
+             }
+         }
+         return DEFAULT_FILE_CONFIG;
+    }
+
     // Toggle Config Panel
     toggleDbConfigBtn.addEventListener('click', () => {
         if (dbConfigPanel.style.display === 'none') {
@@ -163,6 +246,44 @@ document.addEventListener('DOMContentLoaded', () => {
         // Try to load databases
         loadDatabases();
     });
+
+    // Test Connection
+    if (testConnectionBtn) {
+        testConnectionBtn.addEventListener('click', async () => {
+            const originalText = testConnectionBtn.innerHTML;
+            testConnectionBtn.innerHTML = '<span class="loading-dots">连接中</span>';
+            testConnectionBtn.disabled = true;
+
+            const config = {
+                host: document.getElementById('db-host').value,
+                port: parseInt(document.getElementById('db-port').value) || 3306,
+                user: document.getElementById('db-user').value,
+                password: document.getElementById('db-password').value,
+                database: null
+            };
+
+            try {
+                const res = await fetch('/api/db/test-connection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    alert('连接成功！');
+                } else {
+                    const err = await res.json();
+                    alert('连接失败: ' + (err.detail || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('连接错误: ' + e.message);
+            } finally {
+                testConnectionBtn.innerHTML = originalText;
+                testConnectionBtn.disabled = false;
+            }
+        });
+    }
 
     // Refresh DBs
     refreshDbsBtn.addEventListener('click', loadDatabases);
@@ -491,6 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // if (e.target === dbModal) dbModal.style.display = 'none';
         if (e.target === personasModal) personasModal.style.display = 'none';
         if (e.target === dbViewerModal) dbViewerModal.style.display = 'none';
+        if (e.target === settingsModal) settingsModal.style.display = 'none';
     });
 
     // Load saved config
@@ -650,6 +772,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dbConfig) {
             formData.append('db_config', dbConfig);
         }
+
+        // Get File Config
+        const fileConfig = getFileConfig();
+        if (fileConfig) {
+            formData.append('file_config', JSON.stringify(fileConfig));
+        }
         
         if (currentImage) {
             formData.append('file', currentImage);
@@ -668,6 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = { text: text };
             if (currentSessionId) payload.session_id = currentSessionId;
             if (dbConfig) payload.db_config = JSON.parse(dbConfig);
+            if (fileConfig) payload.file_config = fileConfig;
             
             options = {
                 method: 'POST',
@@ -715,9 +844,25 @@ document.addEventListener('DOMContentLoaded', () => {
         let contentHtml = '';
         if (role === 'agent') {
             const logoSrc = isLightMode ? LOGO_LIGHT : LOGO_DARK;
-            contentHtml = `<div class="msg-header"><img src="${logoSrc}" class="agent-avatar"> ${currentAgentName}</div>`;
+            contentHtml = `
+                <div class="msg-header">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <img src="${logoSrc}" class="agent-avatar"> ${currentAgentName}
+                    </div>
+                    <button class="copy-btn" title="复制内容">
+                        <svg class="icon" style="width:14px; height:14px;"><use href="#icon-copy"></use></svg>
+                    </button>
+                </div>`;
         } else {
-            contentHtml = `<div class="msg-header">User <svg class="icon"><use href="#icon-user"></use></svg></div>`;
+            contentHtml = `
+                <div class="msg-header">
+                    <button class="copy-btn" title="复制内容" style="margin-right:auto;">
+                        <svg class="icon" style="width:14px; height:14px;"><use href="#icon-copy"></use></svg>
+                    </button>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        User <svg class="icon"><use href="#icon-user"></use></svg>
+                    </div>
+                </div>`;
         }
 
         const contentDiv = document.createElement('div');
@@ -736,6 +881,65 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.innerHTML = contentHtml;
         msgDiv.appendChild(contentDiv);
         chatContainer.appendChild(msgDiv);
+
+        // Copy functionality
+        const copyBtn = msgDiv.querySelector('.copy-btn');
+        if (copyBtn && text) {
+            copyBtn.addEventListener('click', () => {
+                // Function to perform fallback copy (must be synchronous for execCommand)
+                const performFallbackCopy = () => {
+                    try {
+                        const textArea = document.createElement("textarea");
+                        textArea.value = text;
+                        
+                        // Ensure element is part of layout but invisible
+                        textArea.style.position = "fixed";
+                        textArea.style.left = "-9999px";
+                        textArea.style.top = "0";
+                        textArea.setAttribute("readonly", ""); // Prevent keyboard on mobile
+                        
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        textArea.setSelectionRange(0, 99999); // For mobile devices
+                        
+                        const successful = document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        if (successful) {
+                            showCopySuccess(copyBtn);
+                        } else {
+                            console.error('Fallback copy failed');
+                            // User reported it works even if execCommand returns false, so we suppress the alert
+                            // and optimistically show success
+                            showCopySuccess(copyBtn);
+                        }
+                    } catch (fallbackErr) {
+                        console.error('Copy failed:', fallbackErr);
+                        // Suppress alert
+                    }
+                };
+
+                // Check for secure context and clipboard API support
+                // If not secure or no clipboard API, go straight to fallback to preserve user gesture
+                if (!navigator.clipboard || !window.isSecureContext) {
+                    performFallbackCopy();
+                    return;
+                }
+
+                // Try Clipboard API
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        showCopySuccess(copyBtn);
+                    })
+                    .catch((err) => {
+                        console.warn('Clipboard API failed, trying fallback...', err);
+                        // Note: Fallback might fail here if the browser requires user gesture
+                        // and the promise microtask lost it. But it's worth a try.
+                        performFallbackCopy();
+                    });
+            });
+        }
 
         if (text) {
             if (animate && role === 'agent') {
@@ -810,6 +1014,14 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
+    function showCopySuccess(btn) {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span style="font-size:12px;">已复制</span>';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    }
+
     async function updateBrandName() {
         try {
             const res = await fetch('/api/personas');
@@ -828,12 +1040,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update Existing Messages in Chat Window
                 const agentHeaders = document.querySelectorAll('.message.agent .msg-header');
                 agentHeaders.forEach(header => {
-                    const img = header.querySelector('img');
-                    if (img) {
-                        // Preserve the avatar, update the name
-                        const avatarSrc = img.src;
-                        const avatarClass = img.className;
-                        header.innerHTML = `<img src="${avatarSrc}" class="${avatarClass}"> ${currentAgentName}`;
+                    // Try to find the wrapper div first (new structure with copy button)
+                    const wrapper = header.querySelector('div');
+                    if (wrapper) {
+                        const img = wrapper.querySelector('img');
+                        if (img) {
+                            wrapper.innerHTML = '';
+                            wrapper.appendChild(img);
+                            wrapper.append(' ' + currentAgentName);
+                        }
+                    } else {
+                        // Fallback for legacy structure
+                        const img = header.querySelector('img');
+                        if (img) {
+                            // Preserve the avatar, update the name
+                            const avatarSrc = img.src;
+                            const avatarClass = img.className;
+                            header.innerHTML = `<img src="${avatarSrc}" class="${avatarClass}"> ${currentAgentName}`;
+                        }
                     }
                 });
             }

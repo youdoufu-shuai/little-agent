@@ -3,6 +3,7 @@ import sqlite3
 import pymysql
 import json
 import requests
+import re
 from openai import OpenAI
 from config import Config
 from typing import List, Dict, Any, Optional
@@ -152,19 +153,20 @@ def generate_image(prompt: str, filename: str) -> str:
                 base_url=base_url
             )
             
-            # Use dall-e-3 if available, or fall back to dall-e-2 or model specific logic
-            # For bltcy.ai (Gemini wrapper), we might need to be specific, but standard OpenAI client usually works
-            # with standard model names if mapped correctly by provider.
-            response = client.images.generate(
-                model="gemini-3-pro-image-preview", # Use user specified model
-                prompt=prompt,
-                size="1024x1024",
-                quality="standard",
-                n=1,
+            # Use chat completion for gemini-3-pro-image-preview
+            response = client.chat.completions.create(
+                model="gemini-3-pro-image-preview",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
             )
             
-            if response.data and response.data[0].url:
-                image_url = response.data[0].url
+            content = response.choices[0].message.content
+            # Extract markdown image link: ![alt](url)
+            match = re.search(r'!\[.*?\]\((.*?)\)', content)
+            
+            if match:
+                image_url = match.group(1)
                 
                 # Download the image
                 img_data = requests.get(image_url).content
@@ -172,6 +174,8 @@ def generate_image(prompt: str, filename: str) -> str:
                     f.write(img_data)
                     
                 return f"/static/images/{filename}"
+            else:
+                 raise Exception("No image URL found in response")
                 
     except Exception as e:
         print(f"API Image Generation failed: {e}")

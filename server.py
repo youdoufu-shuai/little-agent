@@ -1,7 +1,7 @@
 import os
 import base64
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -52,10 +52,22 @@ async def get_marked():
     with open("web/marked.min.js", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read(), media_type="application/javascript")
 
+class DBConfig(BaseModel):
+    host: str
+    port: int
+    user: str
+    password: str
+    database: Optional[str] = None
+
+class FileConfig(BaseModel):
+    allow_read: bool = True
+    allowed_paths: List[str] = []
+
 class ChatRequest(BaseModel):
     text: str
     session_id: Optional[str] = None
     db_config: Optional[Dict[str, Any]] = None
+    file_config: Optional[FileConfig] = None
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
@@ -65,7 +77,8 @@ async def chat_endpoint(request: ChatRequest):
             "chat_id": "web-user",
             "text": request.text,
             "image": None,
-            "db_config": request.db_config
+            "db_config": request.db_config,
+            "file_config": request.file_config.dict() if request.file_config else None
         }
         
         result = agent.process_message(message, session_id=request.session_id)
@@ -74,7 +87,7 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/vision")
-async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = Form(None), db_config: Optional[str] = Form(None), file: UploadFile = File(...)):
+async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = Form(None), db_config: Optional[str] = Form(None), file_config: Optional[str] = Form(None), file: UploadFile = File(...)):
     try:
         # Read and encode image
         contents = await file.read()
@@ -82,10 +95,18 @@ async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = For
         data_uri = f"data:{file.content_type};base64,{encoded}"
         
         # Parse db_config if present
-        parsed_config = None
+        parsed_db_config = None
         if db_config:
             try:
-                parsed_config = json.loads(db_config)
+                parsed_db_config = json.loads(db_config)
+            except:
+                pass
+
+        # Parse file_config if present
+        parsed_file_config = None
+        if file_config:
+            try:
+                parsed_file_config = json.loads(file_config)
             except:
                 pass
 
@@ -94,7 +115,8 @@ async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = For
             "chat_id": "web-user",
             "text": text,
             "image": data_uri,
-            "db_config": parsed_config
+            "db_config": parsed_db_config,
+            "file_config": parsed_file_config
         }
         
         result = agent.process_message(message, session_id=session_id)
@@ -161,6 +183,19 @@ class DBConfig(BaseModel):
     user: str
     password: str
     database: Optional[str] = None # Make database optional
+
+@app.post("/api/db/test-connection")
+async def test_db_connection(config: DBConfig):
+    from core.tools import query_mysql
+    try:
+        # Test connection with a simple query
+        sql = "SELECT 1"
+        res = query_mysql(sql, config.host, config.user, config.password, None, config.port)
+        if res.startswith("Error"):
+            raise HTTPException(status_code=400, detail=res)
+        return {"status": "success", "message": "Database connection successful"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/db/databases")
 async def list_databases(config: DBConfig):

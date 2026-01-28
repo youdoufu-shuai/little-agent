@@ -135,7 +135,38 @@ class PersonalAgent:
                     
                     print(f"Executing tool: {func_name} with args: {func_args}")
                     
-                    if func_name in AVAILABLE_TOOLS:
+                    # Permission Check
+                    permission_granted = True
+                    error_msg = ""
+                    
+                    if file_config and func_name in ["read_file", "list_directory"]:
+                        allow_read = file_config.get("allow_read", True)
+                        allowed_paths = file_config.get("allowed_paths", [])
+                        
+                        target_path = func_args.get("file_path") or func_args.get("dir_path")
+                        
+                        if not allow_read:
+                            permission_granted = False
+                            error_msg = f"Error: File access is disabled by user settings. Cannot execute '{func_name}'."
+                        elif allowed_paths and target_path:
+                            # Normalize paths for comparison (rudimentary)
+                            # In a real app, use os.path.abspath and os.path.commonpath
+                            import os
+                            target_abs = os.path.abspath(target_path)
+                            is_allowed = False
+                            for p in allowed_paths:
+                                allowed_abs = os.path.abspath(p)
+                                if target_abs.startswith(allowed_abs):
+                                    is_allowed = True
+                                    break
+                            
+                            if not is_allowed:
+                                permission_granted = False
+                                error_msg = f"Error: Access to path '{target_path}' is denied. Allowed paths: {allowed_paths}"
+
+                    if not permission_granted:
+                        tool_result = error_msg
+                    elif func_name in AVAILABLE_TOOLS:
                         try:
                             # Special handling for query_mysql if host/user/pass provided in args OR from context
                             # The tool definition requires them.

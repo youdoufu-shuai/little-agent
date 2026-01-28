@@ -52,6 +52,9 @@
         <symbol id="icon-sync" viewBox="0 0 512 512">
             <path fill="currentColor" d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"/>
         </symbol>
+        <symbol id="icon-copy" viewBox="0 0 448 512">
+            <path fill="currentColor" d="M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V192c0-35.3 28.7-64 64-64zm336 64h32a32 32 0 0 1 32 32v32H384V192zm-32-32V32a32 32 0 0 0 -32-32H208a32 32 0 0 0 -32 32V336a32 32 0 0 0 32 32H400a32 32 0 0 0 32-32V160H352z"/>
+        </symbol>
     </svg>
 
     <!-- Splash Screen -->
@@ -84,6 +87,9 @@
              </button>
              <button id="db-viewer-btn" class="action-btn" style="margin-top: 10px;">
                 <svg class="icon"><use href="#icon-database"></use></svg> 数据库管理
+             </button>
+             <button id="settings-btn" class="action-btn" style="margin-top: 10px;">
+                <svg class="icon"><use href="#icon-cog"></use></svg> 设置
              </button>
         </div>
 
@@ -212,6 +218,7 @@
                     </div>
                 </div>
                 <div style="display: flex; justify-content: flex-end; margin-top: 10px; gap: 10px;">
+                     <button id="test-connection-btn" class="action-btn" style="width: auto; padding: 5px 20px;">测试连接</button>
                      <button id="save-connect-db-btn" class="primary-btn" style="width: auto; padding: 5px 20px;">保存并连接</button>
                 </div>
             </div>
@@ -247,6 +254,51 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-modal">&times;</span>
+            <h2><svg class="icon"><use href="#icon-cog"></use></svg> 代理设置</h2>
+            
+            <h3 style="margin-top: 20px; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">文件读取权限</h3>
+            
+            <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                <label style="font-weight: 500;">允许读取本地文件</label>
+                <label class="switch" style="position: relative; display: inline-block; width: 40px; height: 24px;">
+                    <input type="checkbox" id="allow-read-toggle" checked>
+                    <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: .4s; border-radius: 24px;"></span>
+                </label>
+            </div>
+            <style>
+                .switch input { opacity: 0; width: 0; height: 0; }
+                .slider { background-color: rgba(255, 255, 255, 0.2); border: 1px solid var(--border-color); }
+                .switch input:checked + .slider { background-color: var(--accent-color); border-color: var(--accent-color); }
+                .switch input:focus + .slider { box-shadow: 0 0 1px var(--accent-color); }
+                .switch input:checked + .slider:before { transform: translateX(16px); }
+                .slider:before {
+                    position: absolute;
+                    content: "";
+                    height: 16px;
+                    width: 16px;
+                    left: 3px;
+                    bottom: 3px;
+                    background-color: white;
+                    transition: .4s;
+                    border-radius: 50%;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                }
+            </style>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label>允许读取的路径范围 (每行一个绝对路径)</label>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px;">如果不填写，则允许读取所有路径（需开启上方开关）。</div>
+                <textarea id="allowed-paths-input" rows="5" placeholder="/Users/username/project&#10;/var/log" style="font-family: var(--font-mono); white-space: pre;"></textarea>
+            </div>
+
+            <button id="save-settings-btn" class="primary-btn">保存设置</button>
         </div>
     </div>
 
