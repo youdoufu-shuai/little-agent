@@ -3,6 +3,7 @@ from core.llm_client import LLMClient
 from core.vision_client import VisionClient
 from core.plato_client import PlatoClient
 from core.session_manager import SessionManager
+from core.persona_manager import PersonaManager
 from core.tools import TOOLS_SCHEMA, AVAILABLE_TOOLS
 
 class PersonalAgent:
@@ -11,6 +12,7 @@ class PersonalAgent:
         self.vision = VisionClient()
         self.plato = PlatoClient()
         self.session_manager = SessionManager()
+        self.persona_manager = PersonaManager()
         # self.history is removed in favor of session_manager
 
     def process_message(self, message, session_id=None):
@@ -64,16 +66,23 @@ class PersonalAgent:
             history_messages.append(msg)
         
         # Construct messages for LLM
+        # Get active persona
+        active_persona = self.persona_manager.get_active_persona()
+        system_content = active_persona["system_prompt"] if active_persona else "你是一个智能个人助手。"
+        
+        if db_config:
+            system_content += f"\n\n[MySQL配置信息]\nHost: {db_config.get('host')}\nPort: {db_config.get('port')}\nUser: {db_config.get('user')}\nPassword: {db_config.get('password')}\nDatabase: {db_config.get('database')}\n\n注意：上述配置是基础连接信息。\n1. 如果用户查询的是当前配置的数据库，直接使用上述所有参数。\n2. 如果用户查询的是**其他数据库**（例如 'test10'），请**保持 Host, Port, User, Password 不变**，仅将 'database' 参数修改为目标数据库名（例如 'test10'）。\n3. **严禁**为了查找数据库配置而浏览本地文件（如 list_directory, read_file），除非用户明确要求查看配置文件。直接尝试使用上述凭证连接。"
+
         system_prompt = {
             "role": "system", 
-            "content": "你是一个智能个人助手。请始终使用中文回答用户的问题。利用你的视觉和逻辑能力为用户提供帮助。你可以读取本地文件、查询SQLite和MySQL数据库，以及生成图像。"
+            "content": system_content
         }
         
         # Use last 20 turns (increased for tool context)
         messages = [system_prompt] + history_messages[-20:]
         
         # Tool execution loop
-        max_turns = 5
+        max_turns = 10  # Increase max turns slightly to avoid premature failure
         current_turn = 0
         
         while current_turn < max_turns:
@@ -127,22 +136,38 @@ class PersonalAgent:
                     print(f"Executing tool: {func_name} with args: {func_args}")
                     
                     if func_name in AVAILABLE_TOOLS:
-                        tool_result = AVAILABLE_TOOLS[func_name](**func_args)
+                        try:
+                            # Special handling for query_mysql if host/user/pass provided in args OR from context
+                            # The tool definition requires them.
+                            # If the LLM generates them based on system prompt, it's fine.
+                            tool_result = AVAILABLE_TOOLS[func_name](**func_args)
+                        except Exception as e:
+                            tool_result = f"Error executing tool: {str(e)}"
                     else:
                         tool_result = f"Error: Tool '{func_name}' not found."
                     
-                    # Add tool result to session
+                    # Truncate tool result if too long to save tokens
+                    if len(tool_result) > 2000:
+                         tool_result_truncated = tool_result[:2000] + "\n...(Output truncated due to length)..."
+                    else:
+                         tool_result_truncated = tool_result
+
+                    # Add tool result to session (store full result or truncated? Truncated is safer for tokens)
+                    # For session history (display), we might want full result but for LLM context, truncated.
+                    # But SessionManager stores to file, LLM reads from file eventually.
+                    # So storing truncated version is better for long-term health.
+                    
                     self.session_manager.add_message(
                         session_id,
                         "tool",
-                        tool_result,
+                        tool_result_truncated,
                         tool_call_id=tool_call.id
                     )
                     
                     # Add to messages
                     messages.append({
                         "role": "tool",
-                        "content": tool_result,
+                        "content": tool_result_truncated,
                         "tool_call_id": tool_call.id
                     })
                 
@@ -154,7 +179,7 @@ class PersonalAgent:
                 break
 
         if not response_text and current_turn >= max_turns:
-            response_text = "抱歉，任务执行步骤过多，已停止。"
+            response_text = "抱歉，由于任务过于复杂，我停止了思考（达到最大步骤限制）。"
             self.session_manager.add_message(session_id, "assistant", response_text)
 
         # 4. Respond (Plato fallback)

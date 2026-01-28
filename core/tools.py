@@ -75,7 +75,7 @@ def query_sqlite(db_path: str, query: str) -> str:
     except Exception as e:
         return f"Error executing query: {str(e)}"
 
-def query_mysql(query: str, host: str, user: str, password: str, database: str, port: int = 3306) -> str:
+def query_mysql(query: str, host: str, user: str, password: str, database: Optional[str] = None, port: int = 3306) -> str:
     """
     Executes a SQL query on a MySQL database.
     
@@ -84,7 +84,7 @@ def query_mysql(query: str, host: str, user: str, password: str, database: str, 
         host: Database host.
         user: Database user.
         password: Database password.
-        database: Database name.
+        database: Database name. Optional if query doesn't require selected DB (e.g. SHOW DATABASES).
         port: Database port (default 3306).
         
     Returns:
@@ -257,7 +257,7 @@ TOOLS_SCHEMA = [
                         "description": "Database port (default 3306)."
                     }
                 },
-                "required": ["query", "host", "user", "password", "database"]
+                "required": ["query", "host", "user", "password"]
             }
         }
     },

@@ -5,22 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人智能代理</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Removed Google Fonts for better loading in China -->
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"> -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/marked/12.0.2/marked.min.js"></script>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="logo-wrapper">
+                <div class="logo-ring"></div>
+                <img src="static/images/logo_dark_mode.png" alt="Way Agent Logo" class="splash-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4712/4712035.png'">
+            </div>
+            <h1 class="splash-title">Way Agent</h1>
+            <div class="loading-bar-container">
+                <div class="loading-bar"></div>
+            </div>
+            <div class="loading-text">Initializing Neural Core...</div>
+        </div>
+    </div>
+
     <div class="sidebar">
         <div class="brand">
-            <i class="fas fa-robot"></i> 智能助理 Way
+            <img id="sidebar-logo" src="static/images/logo_dark_mode.png" alt="Way Agent" class="brand-logo">
+            <span>智能助理 Way</span>
         </div>
         
         <div class="sidebar-actions">
              <button id="new-chat-btn" class="action-btn">
                 <i class="fas fa-plus"></i> 新建对话
              </button>
-             <button id="db-config-btn" class="action-btn" style="margin-top: 10px; background: rgba(255,255,255,0.05);">
-                <i class="fas fa-database"></i> 数据库配置
+             <button id="personas-btn" class="action-btn" style="margin-top: 10px;">
+                <i class="fas fa-user-gear"></i> 人设管理
+             </button>
+             <button id="db-viewer-btn" class="action-btn" style="margin-top: 10px;">
+                <i class="fas fa-database"></i> 数据库管理
              </button>
         </div>
 
@@ -83,31 +103,111 @@
         </div>
     </div>
 
-    <div id="db-modal" class="modal">
-        <div class="modal-content">
+    <div id="db-modal" class="modal" style="display: none;"></div>
+
+    <!-- Personas Modal -->
+    <div id="personas-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
             <span class="close-modal">&times;</span>
-            <h2><i class="fas fa-database"></i> MySQL 配置</h2>
-            <div class="form-group">
-                <label>Host</label>
-                <input type="text" id="db-host" placeholder="localhost" value="localhost">
+            <h2><i class="fas fa-user-gear"></i> 人设管理</h2>
+            
+            <div id="personas-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;">
+                <!-- Persona Items -->
             </div>
-            <div class="form-group">
-                <label>Port</label>
-                <input type="number" id="db-port" placeholder="3306" value="3306">
+
+            <button id="add-persona-btn" class="action-btn" style="margin-bottom: 15px; border-style: dashed;">
+                <i class="fas fa-plus"></i> 添加新人设
+            </button>
+
+            <div id="persona-form" style="display: none; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <h3 style="margin-bottom: 10px; font-size: 1rem;">编辑人设</h3>
+                <div class="form-group">
+                    <label>名称</label>
+                    <input type="text" id="persona-name" placeholder="例如：Python专家">
+                </div>
+                <div class="form-group">
+                    <label>描述</label>
+                    <input type="text" id="persona-desc" placeholder="简短描述">
+                </div>
+                <div class="form-group">
+                    <label>系统提示词 (System Prompt)</label>
+                    <textarea id="persona-prompt" rows="5" style="width: 100%; padding: 10px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 5px; font-family: var(--font-mono);"></textarea>
+                </div>
+                <button id="save-persona-btn" class="primary-btn">保存人设</button>
+                <button id="cancel-persona-btn" class="action-btn" style="margin-top: 5px; border: none; color: #888;">取消</button>
             </div>
-            <div class="form-group">
-                <label>User</label>
-                <input type="text" id="db-user" placeholder="root">
+        </div>
+    </div>
+
+    <!-- DB Viewer Modal -->
+    <div id="db-viewer-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px; height: 90vh; display: flex; flex-direction: column;">
+            <span class="close-modal">&times;</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;"><i class="fas fa-database"></i> 数据库管理</h2>
+                <button id="toggle-db-config" class="action-btn" style="font-size: 0.8rem;"><i class="fas fa-cog"></i> 连接配置</button>
             </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="db-password" placeholder="password">
+
+            <!-- Config Panel (Collapsible) -->
+            <div id="db-config-panel" style="display: none; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr 2fr 2fr; gap: 10px;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size: 0.8rem;">Host</label>
+                        <input type="text" id="db-host" placeholder="localhost" value="localhost" style="padding: 5px;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size: 0.8rem;">Port</label>
+                        <input type="number" id="db-port" placeholder="3306" value="3306" style="padding: 5px;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size: 0.8rem;">User</label>
+                        <input type="text" id="db-user" placeholder="root" style="padding: 5px;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size: 0.8rem;">Password</label>
+                        <input type="password" id="db-password" placeholder="password" style="padding: 5px;">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px; gap: 10px;">
+                     <button id="save-connect-db-btn" class="primary-btn" style="width: auto; padding: 5px 20px;">保存并连接</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Database</label>
-                <input type="text" id="db-name" placeholder="test_db">
+            
+            <div style="display: flex; gap: 20px; flex: 1; overflow: hidden;">
+                <!-- Left Sidebar: Databases & Tables -->
+                <div style="width: 250px; border-right: 1px solid var(--border-color); padding-right: 10px; overflow-y: auto; display: flex; flex-direction: column;">
+                    
+                    <!-- Database Selection -->
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="font-size: 0.9rem; color: var(--accent-dim); margin-bottom: 5px;">数据库</h3>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="db-select" style="flex: 1; padding: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px;">
+                                <option value="">未连接</option>
+                            </select>
+                            <button id="refresh-dbs-btn" class="icon-btn" title="刷新数据库列表"><i class="fas fa-sync-alt"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Tables List -->
+                    <h3 style="font-size: 0.9rem; color: var(--accent-dim); margin-bottom: 10px;">数据表</h3>
+                    <div id="tables-list" style="flex: 1; overflow-y: auto;">
+                        <div style="padding: 10px; color: #888; font-size: 0.8rem;">请先连接数据库</div>
+                    </div>
+                </div>
+                
+                <!-- Data View -->
+                <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                    <h3 id="current-table-name" style="font-size: 0.9rem; color: var(--accent-dim); margin-bottom: 10px;">数据预览</h3>
+                    <div id="table-data-container" style="flex: 1; overflow: auto; background: rgba(0,0,0,0.2); border-radius: 5px;">
+                        <!-- Table Data -->
+                        <div style="padding: 20px; color: #888;">请选择左侧表以查看数据</div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <textarea id="sql-query-input" placeholder="输入 SQL 查询..." rows="2" style="width: 100%; padding: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color);"></textarea>
+                        <button id="run-query-btn" class="primary-btn" style="margin-top: 5px; width: auto; padding: 5px 15px;">运行查询</button>
+                    </div>
+                </div>
             </div>
-            <button id="save-db-btn" class="primary-btn">保存配置</button>
         </div>
     </div>
 
