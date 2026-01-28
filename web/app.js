@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div style="display: flex; gap: 10px;">
                         ${!p.is_active ? `<button class="action-btn activate-btn" style="font-size: 0.8rem;">启用</button>` : ''}
-                        ${p.id !== 'default' ? `<button class="delete-btn" style="color: #ff4a4a;"><i class="fas fa-trash"></i></button>` : ''}
+                        ${p.id !== 'default' ? `<button class="delete-btn" style="color: #ff4a4a;"><svg class="icon"><use href="#icon-trash"></use></svg></button>` : ''}
                     </div>
                 `;
 
@@ -555,8 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (session.id === currentSessionId) li.classList.add('active');
                 
                 li.innerHTML = `
-                    <span><i class="fas fa-comment-alt" style="margin-right:8px; opacity:0.7;"></i>${session.title}</span>
-                    <button class="delete-btn" title="删除对话"><i class="fas fa-trash"></i></button>
+                    <span><svg class="icon" style="margin-right:8px; opacity:0.7;"><use href="#icon-chat"></use></svg>${session.title}</span>
+                    <button class="delete-btn" title="删除对话"><svg class="icon"><use href="#icon-trash"></use></svg></button>
                 `;
                 
                 // Click to load
@@ -722,7 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const logoSrc = isLightMode ? LOGO_LIGHT : LOGO_DARK;
             contentHtml = `<div class="msg-header"><img src="${logoSrc}" class="agent-avatar"> Way Agent</div>`;
         } else {
-            contentHtml = `<div class="msg-header">User <i class="fas fa-user"></i></div>`;
+            contentHtml = `<div class="msg-header">User <svg class="icon"><use href="#icon-user"></use></svg></div>`;
         }
 
         const contentDiv = document.createElement('div');

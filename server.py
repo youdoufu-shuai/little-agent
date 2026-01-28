@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -15,6 +16,15 @@ from core.agent import PersonalAgent
 load_dotenv()
 
 app = FastAPI()
+
+# Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize Agent
 agent = PersonalAgent()
