@@ -637,6 +637,13 @@ textarea::placeholder {
     box-shadow: var(--shadow-sm);
 }
 
+.icon {
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+    vertical-align: -0.125em;
+}
+
 .icon-btn:hover {
     color: var(--accent-color);
     background-color: var(--bg-color);

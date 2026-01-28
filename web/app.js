@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageUpload = document.getElementById('image-upload');
     const imagePreview = document.getElementById('image-preview');
     const themeBtn = document.getElementById('theme-btn');
-    const themeIcon = themeBtn.querySelector('i');
+    const themeIcon = themeBtn.querySelector('.icon');
     const historyList = document.getElementById('history-list');
     const newChatBtn = document.getElementById('new-chat-btn');
 
@@ -58,9 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Set initial icon state
     if (isLightMode) {
-        themeIcon.className = 'fas fa-moon';
+        // Switch to Moon Icon
+        const useEl = themeIcon.querySelector('use');
+        if(useEl) useEl.setAttribute('href', '#icon-moon');
     } else {
-        themeIcon.className = 'fas fa-sun';
+        // Switch to Sun Icon
+        const useEl = themeIcon.querySelector('use');
+        if(useEl) useEl.setAttribute('href', '#icon-sun');
     }
     
     // Initial Logo Update for sidebar/avatars (if any exist on load)
@@ -81,12 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     themeBtn.addEventListener('click', () => {
         isLightMode = !isLightMode;
+        const useEl = themeIcon.querySelector('use');
+        
         if (isLightMode) {
             document.documentElement.setAttribute('data-theme', 'light');
-            themeIcon.className = 'fas fa-moon';
+            if(useEl) useEl.setAttribute('href', '#icon-moon');
         } else {
             document.documentElement.removeAttribute('data-theme');
-            themeIcon.className = 'fas fa-sun';
+            if(useEl) useEl.setAttribute('href', '#icon-sun');
         }
         updateLogos(isLightMode);
     });

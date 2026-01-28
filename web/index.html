@@ -4,12 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人智能代理</title>
-    <link rel="stylesheet" href="style.css?v=1.4">
-    <!-- Use Staticfile CDN for better stability in China -->
-    <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.5">
     <script src="https://cdn.staticfile.org/marked/12.0.2/marked.min.js"></script>
 </head>
 <body>
+    <!-- SVG Icons Definitions -->
+    <svg style="display: none;">
+        <symbol id="icon-plus" viewBox="0 0 448 512">
+            <path fill="currentColor" d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z"/>
+        </symbol>
+        <symbol id="icon-user-gear" viewBox="0 0 640 512">
+            <path fill="currentColor" d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H322.8c-3.1-8.8-3.7-18.4-1.4-27.8l15-60.1c2.8-11.3 8.6-21.5 16.8-29.7l40.3-40.3c-32.1-31-75.7-50.1-123.9-50.1H178.3zm435.5-68.3c-15.6-15.6-40.9-15.6-56.6 0l-29.4 29.4 71 71 29.4-29.4c15.6-15.6 15.6-40.9 0-56.6l-14.4-14.4zM375.9 417c-4.1 4.1-7 9.2-8.4 14.9l-15 60.1c-1.4 5.5 .2 11.2 4.2 15.2s9.7 5.6 15.2 4.2l60.1-15c5.6-1.4 10.8-4.3 14.9-8.4L476.1 459l-71-71L375.9 417z"/>
+        </symbol>
+        <symbol id="icon-database" viewBox="0 0 448 512">
+            <path fill="currentColor" d="M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM0 346.1c14.9 11.8 34 21.2 54.8 28.6C99.7 390.7 159.5 400 224 400s124.3-9.3 169.2-25.3c20.8-7.4 39.9-16.9 54.8-28.6V432c0 44.2-100.3 80-224 80S0 476.2 0 432V346.1z"/>
+        </symbol>
+        <symbol id="icon-brain" viewBox="0 0 512 512">
+            <path fill="currentColor" d="M184 0c30.9 0 56 25.1 56 56V456c0 30.9-25.1 56-56 56c-28.9 0-52.7-21.9-55.7-50.1c-5.2 1.4-10.7 2.1-16.3 2.1c-35.3 0-64-28.7-64-64c0-7.4 1.3-14.6 3.6-21.2C21.4 367.4 0 338.2 0 304c0-31.9 18.7-59.5 45.8-72.3C37.1 220.8 32 207 32 192c0-30.7 21.6-56.3 50.4-62.6C88 123.9 92 118 92 112c0-26.5 21.5-48 48-48c6.9 0 13.4 1.5 19.4 4.1C163 26.2 173.1 0 184 0zM328 0c10.9 0 21 26.2 24.6 68.1c6-2.7 12.6-4.1 19.4-4.1c26.5 0 48 21.5 48 48c0 6-4 11.9-9.6 17.4c28.8 6.3 50.4 31.9 50.4 62.6c0 15-5.1 28.8-13.8 39.7C493.3 244.5 512 272.1 512 304c0 34.2-21.4 63.4-51.6 74.8c2.3 6.6 3.6 13.8 3.6 21.2c0 35.3-28.7 64-64 64c-5.6 0-11.1-.7-16.3-2.1c-3 28.2-26.8 50.1-55.7 50.1c-30.9 0-56-25.1-56-56V56c0-30.9 25.1-56 56-56z"/>
+        </symbol>
+        <symbol id="icon-eye" viewBox="0 0 576 512">
+            <path fill="currentColor" d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.4c.3 6.9 1.3 13.8 3.2 20.7c13.7 51.2 66.4 81.6 117.6 67.9s81.6-66.4 67.9-117.6c-11.1-41.5-47.8-69.4-88.6-71.1c-5.8-.2-9.2 6.1-7.4 11.7c2.1 6.4 3.3 13.2 3.3 20.3z"/>
+        </symbol>
+        <symbol id="icon-sun" viewBox="0 0 512 512">
+            <path fill="currentColor" d="M361.5 1.2c5 2.1 8.6 6.6 9.6 11.9L391 121l107.9 19.8c5.3 1 9.8 4.6 11.9 9.6s1.5 10.7-1.6 14.8l-72.2 95.2 72.1 95.2c3.1 4.1 3.7 9.7 1.6 14.8s-6.6 8.6-11.9 9.6L391 391 371.1 498.9c-1 5.3-4.6 9.8-9.6 11.9s-10.7 1.5-14.8-1.6l-95.2-72.2-95.2 72.2c-4.1 3.1-9.7 3.7-14.8 1.6s-8.6-6.6-9.6-11.9L112 391 4.1 371.1c-5.3-1-9.8-4.6-11.9-9.6s-1.5-10.7 1.6-14.8l72.2-95.2L13.9 156.3c-3.1-4.1-3.7-9.7-1.6-14.8s6.6-8.6 11.9-9.6L132 112 151.9 4.1c1-5.3 4.6-9.8 9.6-11.9s10.7-1.5 14.8 1.6l95.2 72.2 95.2-72.2c4.1-3.1 9.7-3.7 14.8-1.6zM252 256c0 39.8-32.2 72-72 72s-72-32.2-72-72s32.2-72 72-72s72 32.2 72 72z"/>
+        </symbol>
+        <symbol id="icon-moon" viewBox="0 0 384 512">
+            <path fill="currentColor" d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4 5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6-96.9 0-175.5-78.8-175.5-176 0-65.8 36-123.1 89.3-153.3 6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/>
+        </symbol>
+        <symbol id="icon-paperclip" viewBox="0 0 448 512">
+            <path fill="currentColor" d="M364.2 83.8c-24.4-24.4-64-24.4-88.4 0l-184 184c-42.1 42.1-42.1 110.3 0 152.4s110.3 42.1 152.4 0l152-152c10.9-10.9 28.7-10.9 39.6 0s10.9 28.7 0 39.6l-152 152c-64 64-167.6 64-231.6 0s-64-167.6 0-231.6l184-184c46.3-46.3 121.3-46.3 167.6 0s46.3 121.3 0 167.6l-176 176c-28.6 28.6-75 28.6-103.6 0s-28.6-75 0-103.6l144-144c10.9-10.9 28.7-10.9 39.6 0s10.9 28.7 0 39.6l-144 144c-6.7 6.7-6.7 17.7 0 24.4s17.7 6.7 24.4 0l176-176c24.4-24.4 24.4-64 0-88.4z"/>
+        </symbol>
+        <symbol id="icon-paper-plane" viewBox="0 0 512 512">
+            <path fill="currentColor" d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480V396.4c0-4 1.5-7.8 4.2-10.7l167.6-182.9c5.8-6.3 5.6-16-.4-22s-15.7-6.4-22-.7L106 360.8 17.7 316.6C7.1 311.3 .3 300.7 0 288.9s5.9-22.8 16.1-28.7l448-256c10.7-6.1 23.9-5.5 34 1.4z"/>
+        </symbol>
+    </svg>
+
     <!-- Splash Screen -->
     <div id="splash-screen">
         <div class="splash-content">
@@ -33,13 +62,13 @@
         
         <div class="sidebar-actions">
              <button id="new-chat-btn" class="action-btn">
-                <i class="fas fa-plus"></i> 新建对话
+                <svg class="icon"><use href="#icon-plus"></use></svg> 新建对话
              </button>
              <button id="personas-btn" class="action-btn" style="margin-top: 10px;">
-                <i class="fas fa-user-gear"></i> 人设管理
+                <svg class="icon"><use href="#icon-user-gear"></use></svg> 人设管理
              </button>
              <button id="db-viewer-btn" class="action-btn" style="margin-top: 10px;">
-                <i class="fas fa-database"></i> 数据库管理
+                <svg class="icon"><use href="#icon-database"></use></svg> 数据库管理
              </button>
         </div>
 
@@ -58,7 +87,7 @@
             
             <div style="margin-top: 30px;">
                 <div class="status-item">
-                    <i class="fas fa-brain" style="color: var(--accent-dim); margin-right: 10px;"></i>
+                    <svg class="icon" style="color: var(--accent-dim); margin-right: 10px;"><use href="#icon-brain"></use></svg>
                     <span>逻辑核心</span>
                 </div>
                 <div class="model-info">Gemini Flash Thinking</div>
@@ -66,7 +95,7 @@
 
             <div style="margin-top: 20px;">
                 <div class="status-item">
-                    <i class="fas fa-eye" style="color: var(--accent-dim); margin-right: 10px;"></i>
+                    <svg class="icon" style="color: var(--accent-dim); margin-right: 10px;"><use href="#icon-eye"></use></svg>
                     <span>视觉核心</span>
                 </div>
                 <div class="model-info">Gemini 3 Pro</div>
@@ -77,7 +106,7 @@
     <div class="main-content">
         <!-- Theme Toggle Button -->
         <button class="theme-toggle" id="theme-btn" title="切换主题">
-            <i class="fas fa-sun"></i>
+            <svg class="icon"><use href="#icon-sun"></use></svg>
         </button>
 
         <div class="chat-container" id="chat-container">
@@ -92,11 +121,11 @@
             <div class="input-wrapper">
                 <input type="file" id="image-upload" accept="image/*" style="display: none;">
                 <button class="icon-btn" onclick="document.getElementById('image-upload').click()" title="上传图片">
-                    <i class="fas fa-paperclip"></i>
+                    <svg class="icon"><use href="#icon-paperclip"></use></svg>
                 </button>
                 <textarea id="user-input" placeholder="输入指令或问题..." rows="1"></textarea>
                 <button class="icon-btn" id="send-btn" title="发送">
-                    <i class="fas fa-paper-plane"></i>
+                    <svg class="icon"><use href="#icon-paper-plane"></use></svg>
                 </button>
             </div>
         </div>
