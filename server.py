@@ -47,6 +47,11 @@ async def get_js():
     with open("web/app.js", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read(), media_type="application/javascript")
 
+@app.get("/marked.min.js")
+async def get_marked():
+    with open("web/marked.min.js", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read(), media_type="application/javascript")
+
 class ChatRequest(BaseModel):
     text: str
     session_id: Optional[str] = None
