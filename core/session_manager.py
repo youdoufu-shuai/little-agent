@@ -12,7 +12,7 @@ class SessionManager:
     def _get_file_path(self, session_id: str) -> str:
         return os.path.join(self.storage_dir, f"{session_id}.json")
 
-    def create_session(self, title: str = "New Chat") -> Dict:
+    def create_session(self, title: str = "新对话") -> Dict:
         session_id = str(uuid.uuid4())
         now = time.time()
         session = {
@@ -33,7 +33,7 @@ class SessionManager:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Error loading session {session_id}: {e}")
+            print(f"加载会话出错 {session_id}: {e}")
             return None
 
     def list_sessions(self) -> List[Dict]:
@@ -46,14 +46,14 @@ class SessionManager:
                 session_id = filename[:-5]
                 session = self.get_session(session_id)
                 if session:
-                    # Return only metadata for listing
+                    # 仅返回元数据用于列表
                     sessions.append({
                         "id": session["id"],
-                        "title": session.get("title", "New Chat"),
+                        "title": session.get("title", "新对话"),
                         "created_at": session.get("created_at", 0),
                         "updated_at": session.get("updated_at", 0)
                     })
-        # Sort by updated_at desc
+        # 按 updated_at 降序排序
         sessions.sort(key=lambda x: x["updated_at"], reverse=True)
         return sessions
 
@@ -67,15 +67,15 @@ class SessionManager:
             "content": content,
             "timestamp": time.time()
         }
-        # Add any additional fields (e.g. tool_calls, tool_call_id)
+        # 添加任何其他字段（例如 tool_calls, tool_call_id）
         message.update(kwargs)
         
         session["messages"].append(message)
         session["updated_at"] = time.time()
         
-        # Auto-update title if it's the first user message and title is default
+        # 如果是第一条用户消息且标题为默认值，自动更新标题
         if len(session["messages"]) == 1 and role == "user":
-            # Simple title generation: first 20 chars
+            # 简单的标题生成：前 20 个字符
             session["title"] = content[:20] + "..." if len(content) > 20 else content
             
         self._save_session(session)

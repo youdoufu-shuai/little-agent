@@ -9,15 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-# Import the Agent
+# 导入 Agent
 from core.agent import PersonalAgent
 
-# Load environment variables
+# 加载环境变量
 load_dotenv()
 
 app = FastAPI()
 
-# Add CORS Middleware
+# 添加 CORS 中间件
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,10 +26,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Agent
+# 初始化 Agent
 agent = PersonalAgent()
 
-# Serve static files
+# 提供静态文件服务
 app.mount("/static", StaticFiles(directory="web"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
@@ -72,7 +72,7 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
-        # Construct message for Agent (mimicking Plato format)
+        # 构建 Agent 消息（模仿 Plato 格式）
         message = {
             "chat_id": "web-user",
             "text": request.text,
@@ -89,12 +89,12 @@ async def chat_endpoint(request: ChatRequest):
 @app.post("/api/vision")
 async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = Form(None), db_config: Optional[str] = Form(None), file_config: Optional[str] = Form(None), file: UploadFile = File(...)):
     try:
-        # Read and encode image
+        # 读取并编码图像
         contents = await file.read()
         encoded = base64.b64encode(contents).decode('utf-8')
         data_uri = f"data:{file.content_type};base64,{encoded}"
         
-        # Parse db_config if present
+        # 如果存在，解析 db_config
         parsed_db_config = None
         if db_config:
             try:
@@ -102,7 +102,7 @@ async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = For
             except:
                 pass
 
-        # Parse file_config if present
+        # 如果存在，解析 file_config
         parsed_file_config = None
         if file_config:
             try:
@@ -110,7 +110,7 @@ async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = For
             except:
                 pass
 
-        # Construct message
+        # 构建消息
         message = {
             "chat_id": "web-user",
             "text": text,
@@ -124,7 +124,7 @@ async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = For
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# History / Session Management API
+# 历史记录 / 会话管理 API
 
 @app.get("/api/sessions")
 async def list_sessions():
@@ -141,7 +141,7 @@ async def get_session(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
-# Personas Management API
+# 人格管理 API
 
 class PersonaCreate(BaseModel):
     name: str
@@ -175,20 +175,20 @@ async def delete_persona(persona_id: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Database Viewer API
+# 数据库查看器 API
 
 class DBConfig(BaseModel):
     host: str
     port: int
     user: str
     password: str
-    database: Optional[str] = None # Make database optional
+    database: Optional[str] = None # 数据库名称可选
 
 @app.post("/api/db/test-connection")
 async def test_db_connection(config: DBConfig):
     from core.tools import query_mysql
     try:
-        # Test connection with a simple query
+        # 使用简单查询测试连接
         sql = "SELECT 1"
         res = query_mysql(sql, config.host, config.user, config.password, None, config.port)
         if res.startswith("Error"):
@@ -202,7 +202,7 @@ async def list_databases(config: DBConfig):
     from core.tools import query_mysql
     try:
         sql = "SHOW DATABASES"
-        # Connect without specific DB to list databases
+        # 连接时不指定数据库以列出所有数据库
         res = query_mysql(sql, config.host, config.user, config.password, None, config.port)
         if res.startswith("Error"):
              raise HTTPException(status_code=400, detail=res)
@@ -217,7 +217,7 @@ async def list_db_tables(config: DBConfig):
         if not config.database:
              raise HTTPException(status_code=400, detail="Database name required to list tables")
         
-        # Query to list tables
+        # 查询以列出表
         sql = "SHOW TABLES"
         res = query_mysql(sql, config.host, config.user, config.password, config.database, config.port)
         if res.startswith("Error"):
@@ -228,9 +228,9 @@ async def list_db_tables(config: DBConfig):
 
 @app.post("/api/db/query")
 async def query_db(config: DBConfig, query: str = Form(...)):
-    # Note: reusing query_mysql tool logic but exposed for UI
-    # Wait, FastAPI form param with Pydantic model body is tricky.
-    # Let's use a single Pydantic model for request body
+    # 注意：复用 query_mysql 工具逻辑，但暴露给 UI 使用
+    # 等等，FastAPI 表单参数配合 Pydantic 模型体比较棘手。
+    # 让我们使用单个 Pydantic 模型作为请求体
     pass
 
 class DBQueryRequest(BaseModel):

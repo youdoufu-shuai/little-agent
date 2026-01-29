@@ -9,17 +9,17 @@ class Config:
     PLATO_API_KEY = os.getenv("PLATO_API_KEY")
     PLATO_BASE_URL = os.getenv("PLATO_BASE_URL", "https://api.plato.com/v1")
     
-    # Logic Brain (Gemini 3 Flash Thinking)
+    # 逻辑大脑 (Gemini 3 Flash Thinking)
     LOGIC_API_KEY = os.getenv("LOGIC_API_KEY")
     LOGIC_BASE_URL = os.getenv("LOGIC_BASE_URL", "https://api.bltcy.ai/v1")
     LOGIC_MODEL = os.getenv("LOGIC_MODEL", "gemini-3-flash-preview-thinking-*")
     
-    # Vision Brain (Gemini)
+    # 视觉大脑 (Gemini)
     VISION_API_KEY = os.getenv("VISION_API_KEY")
     VISION_BASE_URL = os.getenv("VISION_BASE_URL", "https://api.bltcy.ai/v1")
     VISION_MODEL = os.getenv("VISION_MODEL", "gemini-3-pro-preview")
 
-    # Agent Settings
+    # Agent 设置
     AGENT_NAME = "Personal Assistant"
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
@@ -30,7 +30,7 @@ class Config:
             missing.append("LOGIC_API_KEY")
         if not Config.VISION_API_KEY:
             missing.append("VISION_API_KEY")
-        # Plato key might be optional for local testing
+        # Plato key 在本地测试时可能是可选的
             
         if missing:
             print(f"Warning: Missing configuration for: {', '.join(missing)}")

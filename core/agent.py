@@ -13,49 +13,50 @@ class PersonalAgent:
         self.plato = PlatoClient()
         self.session_manager = SessionManager()
         self.persona_manager = PersonaManager()
-        # self.history is removed in favor of session_manager
+        # self.history 已被移除，改为使用 session_manager
 
     def process_message(self, message, session_id=None):
         """
-        Process an incoming message (dict) from Plato or Web.
-        Structure expected: {"chat_id": "...", "text": "...", "image": "..."}
+        处理来自 Plato 或 Web 的传入消息（字典）。
+        预期结构: {"chat_id": "...", "text": "...", "image": "..."}
         
-        :param message: Message dict
-        :param session_id: Optional session ID. If not provided, creates a new one or uses a default.
-        :return: Response text
+        :param message: 消息字典
+        :param session_id: 可选的会话 ID。如果未提供，则创建一个新的或使用默认值。
+        :return: 响应文本
         """
         chat_id = message.get("chat_id")
         user_text = message.get("text", "")
         image_url = message.get("image")
         db_config = message.get("db_config")
+        file_config = message.get("file_config")
 
-        # Ensure session exists
+        # 确保会话存在
         if not session_id:
-             # Create new session if none provided (or could be handled by caller)
-             # For web interface, usually the caller will provide session_id or ask to create one.
-             # If called without session_id (e.g. from Plato webhook), we might need a mapping strategy.
-             # For simplicity, we'll create a new one if missing.
+             # 如果未提供则创建新会话（或者可以由调用者处理）
+             # 对于 Web 界面，通常调用者会提供 session_id 或请求创建一个。
+             # 如果调用时没有 session_id（例如来自 Plato webhook），我们可能需要一种映射策略。
+             # 为简单起见，如果缺失则创建一个新的。
              session = self.session_manager.create_session(title=user_text[:20])
              session_id = session["id"]
 
         response_text = ""
 
-        # 1. Vision Brain
+        # 1. 视觉大脑
         if image_url:
             print(f"Processing image from {chat_id}...")
             vision_desc = self.vision.analyze_image(image_url)
             user_text += f"\n[System Note: User uploaded an image. Description: {vision_desc}]"
 
-        # 2. Update History via Session Manager
+        # 2. 通过 Session Manager 更新历史记录
         self.session_manager.add_message(session_id, "user", user_text)
 
-        # 3. Logic Brain
+        # 3. 逻辑大脑
         print(f"Thinking for {chat_id} in session {session_id}...")
         
-        # Retrieve history from session
+        # 从会话中获取历史记录
         session = self.session_manager.get_session(session_id)
         
-        # Convert session messages to LLM format
+        # 将会话消息转换为 LLM 格式
         history_messages = []
         for m in session.get("messages", []):
             msg = {"role": m["role"], "content": m["content"]}
@@ -65,8 +66,8 @@ class PersonalAgent:
                 msg["tool_call_id"] = m["tool_call_id"]
             history_messages.append(msg)
         
-        # Construct messages for LLM
-        # Get active persona
+        # 构建 LLM 消息
+        # 获取活跃人格
         active_persona = self.persona_manager.get_active_persona()
         system_content = active_persona["system_prompt"] if active_persona else "你是一个智能个人助手。"
         
@@ -78,11 +79,11 @@ class PersonalAgent:
             "content": system_content
         }
         
-        # Use last 20 turns (increased for tool context)
+        # 使用最近 20 轮对话（为工具上下文增加）
         messages = [system_prompt] + history_messages[-20:]
         
-        # Tool execution loop
-        max_turns = 10  # Increase max turns slightly to avoid premature failure
+        # 工具执行循环
+        max_turns = 10  # 稍微增加最大轮数以避免过早失败
         current_turn = 0
         
         while current_turn < max_turns:
@@ -92,10 +93,10 @@ class PersonalAgent:
                 response_text = "抱歉，处理您的请求时遇到了错误。"
                 break
                 
-            # Check for tool calls
+            # 检查工具调用
             if llm_response.tool_calls:
-                # Add assistant message with tool calls to history/messages
-                # Convert tool_calls object to list of dicts for storage
+                # 将带有工具调用的助手消息添加到历史记录/消息
+                # 将 tool_calls 对象转换为字典列表以便存储
                 tool_calls_data = []
                 for tc in llm_response.tool_calls:
                     tool_calls_data.append({
@@ -107,7 +108,7 @@ class PersonalAgent:
                         }
                     })
                 
-                # Add to session manager
+                # 添加到会话管理器
                 display_content = llm_response.content
                 if not display_content:
                      tool_names = ", ".join([t['function']['name'] for t in tool_calls_data])
@@ -120,7 +121,7 @@ class PersonalAgent:
                     tool_calls=tool_calls_data
                 )
                 
-                # Add to current messages list for next iteration
+                # 添加到当前消息列表以供下一次迭代
                 assistant_msg = {
                     "role": "assistant",
                     "content": llm_response.content,
@@ -128,18 +129,18 @@ class PersonalAgent:
                 }
                 messages.append(assistant_msg)
                 
-                # Execute tools
+                # 执行工具
                 for tool_call in llm_response.tool_calls:
                     func_name = tool_call.function.name
                     func_args = json.loads(tool_call.function.arguments)
                     
                     print(f"Executing tool: {func_name} with args: {func_args}")
                     
-                    # Permission Check
+                    # 权限检查
                     permission_granted = True
                     error_msg = ""
                     
-                    if file_config and func_name in ["read_file", "list_directory"]:
+                    if file_config and func_name in ["read_file", "list_directory", "write_file"]:
                         allow_read = file_config.get("allow_read", True)
                         allowed_paths = file_config.get("allowed_paths", [])
                         
@@ -149,8 +150,8 @@ class PersonalAgent:
                             permission_granted = False
                             error_msg = f"Error: File access is disabled by user settings. Cannot execute '{func_name}'."
                         elif allowed_paths and target_path:
-                            # Normalize paths for comparison (rudimentary)
-                            # In a real app, use os.path.abspath and os.path.commonpath
+                            # 标准化路径以进行比较（初步实现）
+                            # 在实际应用中，使用 os.path.abspath 和 os.path.commonpath
                             import os
                             target_abs = os.path.abspath(target_path)
                             is_allowed = False
@@ -168,25 +169,25 @@ class PersonalAgent:
                         tool_result = error_msg
                     elif func_name in AVAILABLE_TOOLS:
                         try:
-                            # Special handling for query_mysql if host/user/pass provided in args OR from context
-                            # The tool definition requires them.
-                            # If the LLM generates them based on system prompt, it's fine.
+                            # 对 query_mysql 的特殊处理，如果参数或上下文中提供了 host/user/pass
+                            # 工具定义需要它们。
+                            # 如果 LLM 根据系统提示生成它们，那也没问题。
                             tool_result = AVAILABLE_TOOLS[func_name](**func_args)
                         except Exception as e:
                             tool_result = f"Error executing tool: {str(e)}"
                     else:
                         tool_result = f"Error: Tool '{func_name}' not found."
                     
-                    # Truncate tool result if too long to save tokens
+                    # 如果工具结果太长，截断以节省 token
                     if len(tool_result) > 2000:
                          tool_result_truncated = tool_result[:2000] + "\n...(Output truncated due to length)..."
                     else:
                          tool_result_truncated = tool_result
 
-                    # Add tool result to session (store full result or truncated? Truncated is safer for tokens)
-                    # For session history (display), we might want full result but for LLM context, truncated.
-                    # But SessionManager stores to file, LLM reads from file eventually.
-                    # So storing truncated version is better for long-term health.
+                    # 将工具结果添加到会话（存储完整结果还是截断版？截断版对 token 更安全）
+                    # 对于会话历史（显示），我们可能想要完整结果，但对于 LLM 上下文，使用截断版。
+                    # 但 SessionManager 存储到文件，LLM 最终会从文件读取。
+                    # 因此，存储截断版本更有利于长期健康。
                     
                     self.session_manager.add_message(
                         session_id,
@@ -195,7 +196,7 @@ class PersonalAgent:
                         tool_call_id=tool_call.id
                     )
                     
-                    # Add to messages
+                    # 添加到消息
                     messages.append({
                         "role": "tool",
                         "content": tool_result_truncated,
@@ -204,7 +205,7 @@ class PersonalAgent:
                 
                 current_turn += 1
             else:
-                # Final text response
+                # 最终文本响应
                 response_text = llm_response.content
                 self.session_manager.add_message(session_id, "assistant", response_text)
                 break
@@ -213,7 +214,7 @@ class PersonalAgent:
             response_text = "抱歉，由于任务过于复杂，我停止了思考（达到最大步骤限制）。"
             self.session_manager.add_message(session_id, "assistant", response_text)
 
-        # 4. Respond (Plato fallback)
+        # 4. 响应（Plato 后备）
         # self.plato.send_message(chat_id, response_text)
         
         return {

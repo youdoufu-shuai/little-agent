@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeIcon = themeBtn.querySelector('.icon');
     const historyList = document.getElementById('history-list');
     const newChatBtn = document.getElementById('new-chat-btn');
+    const micBtn = document.getElementById('mic-btn');
+    const autoTtsToggle = document.getElementById('auto-tts-toggle');
 
     let currentImage = null;
     let currentSessionId = null;
@@ -644,6 +646,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sendBtn.addEventListener('click', sendMessage);
 
+    // --- Voice Interaction Logic ---
+    // Check Browser Support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isRecording = false;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'zh-CN'; // Default to Chinese
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            isRecording = true;
+            if (micBtn) {
+                micBtn.classList.add('recording'); 
+                micBtn.style.color = '#ff4a4a';
+                // Pulse animation could be added via CSS
+            }
+        };
+
+        recognition.onend = () => {
+            isRecording = false;
+            if (micBtn) {
+                micBtn.classList.remove('recording');
+                micBtn.style.color = '';
+            }
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            userInput.value += transcript;
+            userInput.focus();
+            // Trigger auto-resize
+            userInput.style.height = 'auto';
+            userInput.style.height = (userInput.scrollHeight) + 'px';
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error', event.error);
+            isRecording = false;
+            if (micBtn) {
+                micBtn.classList.remove('recording');
+                micBtn.style.color = '';
+            }
+        };
+
+        if (micBtn) {
+            micBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                }
+            });
+        }
+    } else {
+        if (micBtn) {
+            micBtn.style.display = 'none'; // Hide if not supported
+            console.warn('Speech Recognition not supported in this browser.');
+        }
+    }
+
+    function speakText(text) {
+        if (!window.speechSynthesis) return;
+        
+        // Cancel any current speaking
+        window.speechSynthesis.cancel();
+
+        // Strip markdown symbols for better speech
+        // Simple regex to remove common markdown like **, ##, etc.
+        const cleanText = text.replace(/[*#`_]/g, '');
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'zh-CN'; // Default to Chinese
+        
+        window.speechSynthesis.speak(utterance);
+    }
+
     // Handle Image Upload
     imageUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -977,6 +1058,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 element.innerHTML = marked.parse(text);
                 // Highlight code blocks if we had a highlighter (optional)
                 scrollToBottom();
+                
+                // --- TTS Trigger ---
+                // Only speak if auto-tts is enabled
+                const autoTtsToggle = document.getElementById('auto-tts-toggle');
+                if (autoTtsToggle && autoTtsToggle.checked) {
+                    speakText(text);
+                }
             }
         }
         
