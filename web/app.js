@@ -40,23 +40,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatContainer = document.getElementById('chat-container');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+    const stopBtn = document.getElementById('stop-btn');
     const imageUpload = document.getElementById('image-upload');
     const imagePreview = document.getElementById('image-preview');
+    const filePreview = document.getElementById('file-preview');
     const themeBtn = document.getElementById('theme-btn');
     const themeIcon = themeBtn.querySelector('.icon');
     const historyList = document.getElementById('history-list');
     const newChatBtn = document.getElementById('new-chat-btn');
     const micBtn = document.getElementById('mic-btn');
+    const executionTimer = document.getElementById('execution-timer');
     const autoTtsToggle = document.getElementById('auto-tts-toggle');
 
     let currentImage = null;
     let currentSessionId = null;
     let currentAgentName = 'Way Agent';
+    let timerInterval = null;
+
+    // Timer Functions
+    function startTimer() {
+        if (!executionTimer) return;
+        executionTimer.style.display = 'block';
+        executionTimer.textContent = '00:00';
+        let seconds = 0;
+        
+        if (timerInterval) clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+            seconds++;
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            executionTimer.textContent = `${m}:${s}`;
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        if (executionTimer) {
+            executionTimer.style.display = 'none';
+        }
+    }
 
     // Initialize: Update Brand Name first, then Load History
     (async () => {
         await updateBrandName();
         loadHistory();
+        showWelcomeMessage();
     })();
 
     // Theme Switching Logic
@@ -106,8 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // New Chat Button
     newChatBtn.addEventListener('click', () => {
         currentSessionId = null;
-        chatContainer.innerHTML = '';
-        appendMessage('agent', '系统初始化完成。双脑架构已上线。今天我能为您做些什么？');
+        showWelcomeMessage();
         // Clear active class from history
         document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
     });
@@ -168,11 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', () => {
-            saveSettings();
+        saveSettingsBtn.addEventListener('click', async () => {
+            await saveSettings();
             settingsModal.style.display = 'none';
-            // Optional: show a toast or alert, but for now we just close it
-            // alert('设置已保存');
+            alert('设置已保存');
         });
     }
 
@@ -195,7 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
         allowedPathsInput.value = (config.allowed_paths || []).join('\n');
     }
 
-    function saveSettings() {
+    async function saveSettings() {
+        // 1. 保存文件权限设置 (本地)
         const allowRead = allowReadToggle.checked;
         const pathsText = allowedPathsInput.value.trim();
         const allowedPaths = pathsText 
@@ -208,6 +239,34 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         localStorage.setItem('file_config', JSON.stringify(config));
+
+        // 2. 保存 API 配置 (服务端)
+        const apiBaseUrl = document.getElementById('api-base-url').value.trim();
+        const apiKey = document.getElementById('api-key').value.trim();
+        const apiModel = document.getElementById('api-model').value.trim();
+
+        if (apiBaseUrl || apiKey || apiModel) {
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        logic_base_url: apiBaseUrl || null,
+                        logic_api_key: apiKey || null,
+                        logic_model: apiModel || null
+                    })
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    console.error('Failed to update API config:', err);
+                    alert('文件设置已保存，但 API 配置更新失败: ' + (err.detail || '未知错误'));
+                }
+            } catch (e) {
+                console.error('Error updating API config:', e);
+                alert('文件设置已保存，但 API 配置请求出错');
+            }
+        }
     }
 
     function getFileConfig() {
@@ -638,7 +697,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle Enter key
     userInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.isComposing) return; // Ignore if using IME
+        
+        // Send on Ctrl+Enter or Cmd+Enter
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             sendMessage();
         }
@@ -725,17 +787,33 @@ document.addEventListener('DOMContentLoaded', () => {
         window.speechSynthesis.speak(utterance);
     }
 
-    // Handle Image Upload
+    // Handle Image/File Upload
     imageUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
             currentImage = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imagePreview.src = e.target.result;
-                imagePreview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+            
+            if (file.type.startsWith('image/')) {
+                // Image handling
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    if (filePreview) filePreview.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // Document handling
+                imagePreview.style.display = 'none';
+                if (filePreview) {
+                    filePreview.style.display = 'flex';
+                    filePreview.innerHTML = `
+                        <svg class="icon"><use href="#icon-paperclip"></use></svg>
+                        <span>${file.name}</span>
+                        <span style="font-size: 0.8em; color: var(--text-muted); margin-left: 5px;">(${(file.size/1024).toFixed(1)} KB)</span>
+                    `;
+                }
+            }
         }
     });
 
@@ -815,14 +893,25 @@ document.addEventListener('DOMContentLoaded', () => {
                    }
                 });
             } else {
-                 chatContainer.innerHTML = '';
-                 appendMessage('agent', '暂无消息。');
+                 showWelcomeMessage();
             }
             scrollToBottom();
         } catch (error) {
             removeLoading(loadingId);
             appendMessage('agent', '无法加载历史记录。');
         }
+    }
+
+    let abortController = null;
+
+    if (stopBtn) {
+        stopBtn.addEventListener('click', () => {
+            if (abortController) {
+                abortController.abort();
+                abortController = null;
+                // UI reset will happen in the catch block or finally
+            }
+        });
     }
 
     async function sendMessage() {
@@ -833,11 +922,25 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = '';
         userInput.style.height = '24px';
         
+        // Determine display for local message
+        let displayImage = null;
+        let displayText = text;
+
+        if (currentImage) {
+            if (currentImage.type.startsWith('image/')) {
+                displayImage = imagePreview.src;
+            } else {
+                displayText = (text ? text + '\n' : '') + `[文件: ${currentImage.name}]`;
+            }
+        }
+
         // Add User Message locally
-        appendMessage('user', text, currentImage ? imagePreview.src : null);
+        removeWelcomeMessage();
+        appendMessage('user', displayText, displayImage);
         
         // Hide preview
         imagePreview.style.display = 'none';
+        if (filePreview) filePreview.style.display = 'none';
         
         const loadingId = appendLoading();
         
@@ -867,10 +970,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const endpoint = currentImage ? '/api/vision' : '/api/chat';
         let options = {};
 
+        // Setup AbortController
+        if (abortController) abortController.abort(); // Cancel previous if any
+        abortController = new AbortController();
+
+        // UI State: Show Stop, Hide Send
+        sendBtn.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = 'flex';
+        startTimer();
+
         if (currentImage) {
             options = {
                 method: 'POST',
-                body: formData
+                body: formData,
+                signal: abortController.signal
             };
         } else {
             // For JSON endpoint
@@ -882,7 +995,8 @@ document.addEventListener('DOMContentLoaded', () => {
             options = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: abortController.signal
             };
         }
 
@@ -912,10 +1026,35 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error('Error:', error);
             removeLoading(loadingId);
-            appendMessage('agent', '错误: 无法连接到代理系统。');
+            if (error.name === 'AbortError') {
+                console.log('Request aborted by user');
+                // Optional: Append a small note saying "Cancelled"
+                // appendMessage('system', '已停止生成');
+            } else {
+                console.error('Error:', error);
+                appendMessage('agent', '错误: 无法连接到代理系统。');
+            }
+        } finally {
+            // Reset UI
+            sendBtn.style.display = 'flex';
+            if (stopBtn) stopBtn.style.display = 'none';
+            stopTimer();
+            abortController = null;
         }
+    }
+
+    function showWelcomeMessage() {
+        chatContainer.innerHTML = '';
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'welcome-container';
+        welcomeDiv.innerHTML = `<div class="welcome-text">我是${currentAgentName}，很高兴为你服务。</div>`;
+        chatContainer.appendChild(welcomeDiv);
+    }
+
+    function removeWelcomeMessage() {
+        const welcome = chatContainer.querySelector('.welcome-container');
+        if (welcome) welcome.remove();
     }
 
     function appendMessage(role, text, imageUrl = null, animate = false) {
@@ -1123,6 +1262,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update Sidebar
                 if (nameDisplay) {
                     nameDisplay.textContent = `智能助理 ${activePersona.name}`;
+                }
+
+                // Update Welcome Message if visible
+                const welcomeText = document.querySelector('.welcome-text');
+                if (welcomeText) {
+                    welcomeText.textContent = `我是${currentAgentName}，很高兴为你服务。`;
                 }
 
                 // Update Existing Messages in Chat Window

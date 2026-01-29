@@ -88,6 +88,7 @@ class PersonalAgent:
         
         while current_turn < max_turns:
             llm_response = self.llm.chat(messages, tools=TOOLS_SCHEMA)
+            current_turn += 1
             
             if not llm_response:
                 response_text = "抱歉，处理您的请求时遇到了错误。"
@@ -140,11 +141,11 @@ class PersonalAgent:
                     permission_granted = True
                     error_msg = ""
                     
-                    if file_config and func_name in ["read_file", "list_directory", "write_file"]:
+                    if file_config and func_name in ["read_file", "list_directory", "write_file", "search_files"]:
                         allow_read = file_config.get("allow_read", True)
                         allowed_paths = file_config.get("allowed_paths", [])
                         
-                        target_path = func_args.get("file_path") or func_args.get("dir_path")
+                        target_path = func_args.get("file_path") or func_args.get("dir_path") or func_args.get("root_dir")
                         
                         if not allow_read:
                             permission_granted = False

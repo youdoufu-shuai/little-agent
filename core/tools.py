@@ -78,6 +78,53 @@ def list_directory(dir_path: str) -> str:
     except Exception as e:
         return f"列出目录出错: {str(e)}"
 
+def search_files(root_dir: str, pattern: str, max_results: int = 20) -> str:
+    """
+    在指定目录中递归搜索文件。
+    
+    Args:
+        root_dir: 搜索的根目录绝对路径。
+        pattern: 文件名搜索模式（不区分大小写，支持部分匹配）。
+        max_results: 返回的最大结果数（默认为 20）。
+        
+    Returns:
+        匹配的文件绝对路径列表。
+    """
+    try:
+        import fnmatch
+        
+        if not os.path.exists(root_dir):
+            return f"错误: 目录 '{root_dir}' 不存在。"
+            
+        results = []
+        count = 0
+        
+        # 遍历目录
+        for dirpath, dirnames, filenames in os.walk(root_dir):
+            # 过滤隐藏目录
+            dirnames[:] = [d for d in dirnames if not d.startswith('.')]
+            
+            for filename in filenames:
+                # 检查文件名是否匹配
+                # 支持简单的子字符串匹配或 glob 模式
+                if pattern.lower() in filename.lower() or fnmatch.fnmatch(filename.lower(), pattern.lower()):
+                    full_path = os.path.join(dirpath, filename)
+                    results.append(full_path)
+                    count += 1
+                    
+                    if count >= max_results:
+                        break
+            
+            if count >= max_results:
+                break
+                
+        if not results:
+            return f"在 '{root_dir}' 中未找到包含 '{pattern}' 的文件。"
+            
+        return json.dumps(results, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return f"搜索文件出错: {str(e)}"
+
 def query_sqlite(db_path: str, query: str) -> str:
     """
     在本地 SQLite 数据库上执行 SQL 查询。
@@ -156,7 +203,7 @@ def query_mysql(query: str, host: str, user: str, password: str, database: Optio
 
 def generate_image(prompt: str, filename: str) -> str:
     """
-    基于提示词生成图像，使用配置的 API，保存到 web/images/。
+    基于提示词生成图像，使用配置的 API，保存到 web/images/ai_generated/。
     如果 API 失败，则回退到本地占位符。
     
     Args:
@@ -166,7 +213,10 @@ def generate_image(prompt: str, filename: str) -> str:
     Returns:
         生成的图像的 URL 路径或错误信息。
     """
-    output_dir = os.path.join(os.getcwd(), "web", "images")
+    # 修改：将 AI 生成图片保存到 ai_generated 子目录
+    base_dir = os.path.join(os.getcwd(), "web", "images")
+    output_dir = os.path.join(base_dir, "ai_generated")
+    
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
@@ -208,7 +258,7 @@ def generate_image(prompt: str, filename: str) -> str:
                     with open(filepath, 'wb') as f:
                         f.write(img_data)
                         
-                    return f"/static/images/{filename}"
+                    return f"/static/images/ai_generated/{filename}"
                 else:
                     raise Exception(f"下载图像失败。状态码: {img_response.status_code}")
             else:
@@ -247,23 +297,14 @@ def generate_image(prompt: str, filename: str) -> str:
              font = ImageFont.load_default()
              
         # 简单的文本绘制 (大致居中)
-        text = prompt
-        # 如果文本太长，截断以用于演示
-        if len(text) > 50:
-            text = text[:47] + "..."
-            
+        text = "AI IMAGE\n" + prompt[:20] + "..."
         d.text((50, 200), text, fill=(255, 255, 255), font=font)
-        d.text((50, 250), "(AI Generated - Placeholder)", fill=(200, 200, 200), font=font)
-        d.text((50, 300), "(API Failed)", fill=(200, 200, 200), font=font)
         
-        # 保存文件
         img.save(filepath)
-        
-        # 返回用于 Web 访问的相对路径
-        return f"/static/images/{filename}"
+        return f"/static/images/ai_generated/{filename}"
         
     except Exception as e:
-        return f"生成图像出错: {str(e)}"
+        return f"图像生成完全失败: {str(e)}"
 
 def search_web(query: str, max_results: int = 5) -> str:
     """
@@ -750,7 +791,7 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "generate_document",
-            "description": "生成带有格式化文本和图像的 Word (.docx) 或 PDF (.pdf) 文档。",
+            "description": "生成富文本文档 (PDF 或 DOCX)。支持标题、段落和图片。对于图片，可以使用本地路径（绝对路径）或网络 URL。注意：如果需要插入图片，请先使用 generate_image 工具生成或 search_web/read_url 工具获取，然后将路径/URL 传入 content 列表。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -765,7 +806,7 @@ TOOLS_SCHEMA = [
                     },
                     "content": {
                         "type": "string",
-                        "description": "表示内容块列表的 JSON 字符串。示例：'[{\"type\": \"heading\", \"text\": \"Title\", \"level\": 1}, {\"type\": \"paragraph\", \"text\": \"Hello\"}]'"
+                        "description": "表示内容块列表的 JSON 字符串。示例：'[{\"type\": \"heading\", \"text\": \"Title\", \"level\": 1}, {\"type\": \"paragraph\", \"text\": \"Content...\"}, {\"type\": \"image\", \"path\": \"/abs/path/to/img.png\", \"width\": 400}]'"
                     },
                     "style_config": {
                         "type": "string",
@@ -862,6 +903,7 @@ AVAILABLE_TOOLS = {
     "read_file": read_file,
     "write_file": write_file,
     "list_directory": list_directory,
+    "search_files": search_files,
     "query_sqlite": query_sqlite,
     "query_mysql": query_mysql,
     "generate_image": generate_image,

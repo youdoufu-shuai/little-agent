@@ -50,6 +50,8 @@ pip install -r requirements.txt
 ### 3. 配置文件
 复制 `.env.example` 为 `.env`，并填入必要的 API Key：
 
+不在项目里填写也行，启动之后去 `http://127.0.0.1:8000` 配置一下。
+
 ```ini
 # 视觉模型 API Key
 VISION_API_KEY=your_key_here

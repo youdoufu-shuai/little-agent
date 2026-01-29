@@ -1,6 +1,7 @@
 import os
 import base64
 import json
+import io
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +9,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from pypdf import PdfReader
+from docx import Document
 
 # 导入 Agent
 from core.agent import PersonalAgent
@@ -69,6 +72,65 @@ class ChatRequest(BaseModel):
     db_config: Optional[Dict[str, Any]] = None
     file_config: Optional[FileConfig] = None
 
+class APIConfig(BaseModel):
+    logic_base_url: Optional[str] = None
+    logic_api_key: Optional[str] = None
+    logic_model: Optional[str] = None
+
+@app.post("/api/config")
+async def update_config(config: APIConfig):
+    """
+    更新 API 配置（URL, Key, Model）。
+    这将更新运行时的环境变量，并尝试写入 .env 文件以持久化。
+    """
+    try:
+        from config import Config
+        import re
+
+        # 更新运行时配置
+        if config.logic_base_url:
+            os.environ["LOGIC_BASE_URL"] = config.logic_base_url
+            Config.LOGIC_BASE_URL = config.logic_base_url
+        if config.logic_api_key:
+            os.environ["LOGIC_API_KEY"] = config.logic_api_key
+            Config.LOGIC_API_KEY = config.logic_api_key
+        if config.logic_model:
+            os.environ["LOGIC_MODEL"] = config.logic_model
+            Config.LOGIC_MODEL = config.logic_model
+
+        # 尝试更新 .env 文件
+        env_path = ".env"
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                env_content = f.read()
+            
+            # 辅助函数：更新或追加
+            def update_env_var(content, key, value):
+                if not value:
+                    return content
+                pattern = f"^{key}=.*$"
+                replacement = f"{key}={value}"
+                if re.search(pattern, content, re.MULTILINE):
+                    return re.sub(pattern, replacement, content, flags=re.MULTILINE)
+                else:
+                    return content + f"\n{replacement}"
+
+            env_content = update_env_var(env_content, "LOGIC_BASE_URL", config.logic_base_url)
+            env_content = update_env_var(env_content, "LOGIC_API_KEY", config.logic_api_key)
+            env_content = update_env_var(env_content, "LOGIC_MODEL", config.logic_model)
+            
+            with open(env_path, "w", encoding="utf-8") as f:
+                f.write(env_content)
+        
+        # 重新初始化 Agent 以应用更改 (如果 Agent 内部缓存了这些值)
+        # 注意：Agent 实例是全局的，如果它在 __init__ 中读取了配置，需要重新实例化
+        global agent
+        agent = PersonalAgent()
+
+        return {"status": "success", "message": "配置已更新"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
@@ -89,10 +151,47 @@ async def chat_endpoint(request: ChatRequest):
 @app.post("/api/vision")
 async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = Form(None), db_config: Optional[str] = Form(None), file_config: Optional[str] = Form(None), file: UploadFile = File(...)):
     try:
-        # 读取并编码图像
-        contents = await file.read()
-        encoded = base64.b64encode(contents).decode('utf-8')
-        data_uri = f"data:{file.content_type};base64,{encoded}"
+        content_type = file.content_type
+        filename = file.filename
+        
+        message_image = None
+        extracted_text = ""
+        
+        # Check if it's an image
+        if content_type.startswith("image/"):
+            # 读取并编码图像
+            contents = await file.read()
+            encoded = base64.b64encode(contents).decode('utf-8')
+            data_uri = f"data:{file.content_type};base64,{encoded}"
+            message_image = data_uri
+        else:
+             # Document processing
+             contents = await file.read()
+             file_like = io.BytesIO(contents)
+             
+             if filename.lower().endswith(".pdf"):
+                 try:
+                     reader = PdfReader(file_like)
+                     for page in reader.pages:
+                         extracted_text += page.extract_text() + "\n"
+                 except Exception as e:
+                     extracted_text = f"[Error reading PDF: {str(e)}]"
+             elif filename.lower().endswith(".docx"):
+                 try:
+                     doc = Document(file_like)
+                     for para in doc.paragraphs:
+                         extracted_text += para.text + "\n"
+                 except Exception as e:
+                     extracted_text = f"[Error reading DOCX: {str(e)}]"
+             else:
+                 # Assume text/code
+                 try:
+                     extracted_text = contents.decode("utf-8")
+                 except UnicodeDecodeError:
+                      try:
+                         extracted_text = contents.decode("gbk")
+                      except:
+                         extracted_text = "[Error: Unable to decode file content as text]"
         
         # 如果存在，解析 db_config
         parsed_db_config = None
@@ -110,11 +209,16 @@ async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = For
             except:
                 pass
 
+        # Append extracted text to user message
+        final_text = text
+        if extracted_text:
+            final_text += f"\n\n[Attached File Content: {filename}]\n{extracted_text}\n[End of File Content]"
+
         # 构建消息
         message = {
             "chat_id": "web-user",
-            "text": text,
-            "image": data_uri,
+            "text": final_text,
+            "image": message_image,
             "db_config": parsed_db_config,
             "file_config": parsed_file_config
         }
@@ -122,6 +226,8 @@ async def vision_endpoint(text: str = Form(...), session_id: Optional[str] = For
         result = agent.process_message(message, session_id=session_id)
         return result
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 # 历史记录 / 会话管理 API
