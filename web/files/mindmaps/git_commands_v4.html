@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindmap: git_commands_v4.html</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f4f4f9; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .mermaid { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-width: 600px; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+    <h1>Mindmap: git_commands_v4.html</h1>
+    <div class="mermaid">
+mindmap
+  root(("Git 常用命令总结"))
+    "配置与初始化"
+      "git init (初始化本地仓库)"
+      "git clone [url] (克隆远程仓库)"
+      "git config --global user.name \"YourName\" (配置用户名)"
+      "git config --global user.email \"email@example.com\" (配置邮箱)"
+    "本地修改与状态"
+      "git status (查看当前工作区状态)"
+      "git add [file] (添加文件到暂存区)"
+      "git add . (添加所有修改到暂存区)"
+      "git commit -m \"message\" (提交暂存区到本地仓库)"
+      "git diff (查看工作区与暂存区的差异)"
+      "git rm [file] (从版本库中删除文件)"
+    "分支管理"
+      "git branch (查看本地分支)"
+      "git branch [name] (新建分支)"
+      "git checkout [name] (切换分支)"
+      "git checkout -b [name] (创建并切换分支)"
+      "git merge [branch] (合并指定分支到当前分支)"
+      "git branch -d [name] (删除本地分支)"
+    "同步远程仓库"
+      "git remote -v (查看远程仓库详情)"
+      "git fetch (抓取远程仓库更新但不合并)"
+      "git pull (拉取远程更新并直接合并)"
+      "git push (推送本地更新到远程)"
+      "git remote add origin [url] (关联远程仓库)"
+    "撤销与版本回退"
+      "git checkout -- [file] (丢弃工作区的修改)"
+      "git reset HEAD [file] (撤销暂存区的修改)"
+      "git reset --hard [commit_id] (回退到指定版本)"
+      "git revert [commit_id] (撤销某次提交并生成新记录)"
+      "git stash (将当前更改存入储藏区)"
+      "git stash pop (恢复并删除最近一次储藏)"
+    "查询记录"
+      "git log (查看提交历史)"
+      "git log --oneline (简洁显示历史)"
+      "git reflog (查看所有操作记录，常用于找回丢失的提交)"
+      "git show [commit] (查看某次提交的详细内容)"
+    </div>
+</body>
+</html>

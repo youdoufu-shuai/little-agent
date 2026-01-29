@@ -55,10 +55,10 @@ class DocumentGenerator:
             生成文件的绝对路径。
         """
         # 确保输出目录存在
-        # 使用相对于当前文件 (core/doc_generator.py) 的路径来定位 web/files
+        # 使用相对于当前文件 (core/doc_generator.py) 的路径来定位 web/files/documents
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(current_dir)
-        output_dir = os.path.join(project_root, "web", "files")
+        output_dir = os.path.join(project_root, "web", "files", "documents")
         
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -215,7 +215,7 @@ class DocumentGenerator:
         return path
 
     @staticmethod
-    def _generate_docx(file_path: str, content: List[Dict[str, Any]], style_config: Optional[Dict[str, Any]]) -> str:
+    def _generate_docx(file_path: str, content: List[Dict[str, Any]], style_config: Optional[Dict[str, Any]], downloaded_files: Optional[List[str]] = None) -> str:
         doc = Document()
         
         # 如果可能，应用全局样式（python-docx 在没有模板的情况下全局默认设置有限）
@@ -255,7 +255,7 @@ class DocumentGenerator:
                 width = block.get("width", 6.0) # 默认 6 英寸
                 
                 if path:
-                    path = DocumentGenerator._resolve_image_path(path)
+                    path = DocumentGenerator._resolve_image_path(path, downloaded_files)
 
                 if path and os.path.exists(path):
                     try:

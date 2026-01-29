@@ -1,10 +1,12 @@
 
 import os
 import sys
-from core.doc_generator import DocumentGenerator
 
-# Ensure we can import core
-sys.path.append(os.getcwd())
+# Add project root to sys.path to allow importing core
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
+
+from core.doc_generator import DocumentGenerator
 
 def main():
     print("Starting updated PDF generation task...")

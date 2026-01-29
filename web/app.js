@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const filePreview = document.getElementById('file-preview');
     const themeBtn = document.getElementById('theme-btn');
     const themeIcon = themeBtn.querySelector('.icon');
+    const modeDailyBtn = document.getElementById('mode-daily');
+    const modeWorkBtn = document.getElementById('mode-work');
     const historyList = document.getElementById('history-list');
     const newChatBtn = document.getElementById('new-chat-btn');
     const micBtn = document.getElementById('mic-btn');
@@ -134,6 +136,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateLogos(isLightMode);
     });
+
+    // Mode Switcher Logic
+    function updateModeSwitcherUI(activePersonaId) {
+        if (!modeDailyBtn || !modeWorkBtn) return;
+        
+        // Remove active class from all
+        modeDailyBtn.classList.remove('active');
+        modeWorkBtn.classList.remove('active');
+        
+        // Add active class based on ID
+        if (activePersonaId === 'work_mode') {
+            modeWorkBtn.classList.add('active');
+        } else {
+            // Default to daily for 'default' or any other
+            modeDailyBtn.classList.add('active');
+        }
+    }
+
+    async function switchMode(modeId) {
+        try {
+            const res = await fetch('/api/personas/activate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ persona_id: modeId })
+            });
+            
+            if (res.ok) {
+                await updateBrandName(); // This will also update the UI via our modification
+                
+                // Show toast/notification
+                const modeName = modeId === 'work_mode' ? '工作模式' : '日常模式';
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = `已切换至：${modeName}`;
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: var(--accent-color);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    animation: fadeIn 0.3s, fadeOut 0.3s 1.7s forwards;
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            }
+        } catch (error) {
+            console.error('Failed to switch mode:', error);
+            alert('切换模式失败');
+        }
+    }
+
+    if (modeDailyBtn) {
+        modeDailyBtn.addEventListener('click', () => switchMode('default'));
+    }
+    if (modeWorkBtn) {
+        modeWorkBtn.addEventListener('click', () => switchMode('work_mode'));
+    }
 
     // New Chat Button
     newChatBtn.addEventListener('click', () => {
@@ -1019,6 +1084,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.response) {
                 appendMessage('agent', data.response, null, true); // Enable animation
             }
+
+            if (data.finish_reason === 'length') {
+                setTimeout(() => {
+                    if (confirm("任务执行步骤已达上限，是否继续执行剩余计划？")) {
+                        handleContinue(data.session_id);
+                    }
+                }, 500);
+            }
             
             // Update session ID if newly created
             if (data.session_id) {
@@ -1051,6 +1124,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function handleContinue(sessionId) {
+        const loadingId = appendLoading();
+        
+        // UI State
+        sendBtn.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = 'flex';
+        startTimer();
+        
+        const dbConfigRaw = localStorage.getItem('db_config');
+        const fileConfig = getFileConfig();
+        
+        const payload = {
+           text: "请继续执行剩余的计划步骤",
+           session_id: sessionId,
+           max_steps: 20 // Increase limit for continuation
+        };
+        if (dbConfigRaw) payload.db_config = JSON.parse(dbConfigRaw);
+        if (fileConfig) payload.file_config = fileConfig;
+        
+        try {
+           const response = await fetch('/api/chat', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(payload)
+           });
+           const data = await response.json();
+           
+           removeLoading(loadingId);
+           
+           if (data.response) {
+               appendMessage('agent', data.response, null, true);
+           }
+           
+           if (data.finish_reason === 'length') {
+                setTimeout(() => {
+                   if (confirm("任务仍未完成，是否继续？")) {
+                       handleContinue(sessionId);
+                   }
+               }, 500);
+           }
+           
+        } catch (e) {
+            removeLoading(loadingId);
+            appendMessage('agent', 'Error: ' + e.message);
+        } finally {
+           sendBtn.style.display = 'flex';
+           if (stopBtn) stopBtn.style.display = 'none';
+           stopTimer();
+        }
+    }
+
     function showWelcomeMessage() {
         chatContainer.innerHTML = '';
         const welcomeDiv = document.createElement('div');
@@ -1062,6 +1186,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function removeWelcomeMessage() {
         const welcome = chatContainer.querySelector('.welcome-container');
         if (welcome) welcome.remove();
+    }
+
+    function processAutoEmbeds(html) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Find links to .html files in static/files
+        const anchors = tempDiv.querySelectorAll('a[href^="/static/files/"][href$=".html"]');
+        
+        anchors.forEach(a => {
+            const iframeContainer = document.createElement('div');
+            iframeContainer.style.cssText = 'margin-top: 10px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;';
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = a.getAttribute('href');
+            iframe.style.cssText = 'width: 100%; height: 500px; border: none;';
+            
+            iframeContainer.appendChild(iframe);
+            
+            // Insert after the anchor's parent block element if possible, or just after the anchor
+            if (a.parentElement.tagName === 'P') {
+                 a.parentElement.after(iframeContainer);
+            } else {
+                 a.after(iframeContainer);
+            }
+        });
+        
+        return tempDiv.innerHTML;
     }
 
     function appendMessage(role, text, imageUrl = null, animate = false) {
@@ -1174,7 +1326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 typeText(contentDiv, text);
             } else {
                 // Instant render
-                contentDiv.innerHTML = marked.parse(text);
+                contentDiv.innerHTML = processAutoEmbeds(marked.parse(text));
             }
         } else if (role === 'agent' && !imageUrl) {
             contentDiv.innerHTML = `<span style="color:var(--text-muted); font-style:italic;">[执行工具操作中...]</span>`;
@@ -1201,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(type, speed);
             } else {
                 // Finished typing, render Markdown
-                element.innerHTML = marked.parse(text);
+                element.innerHTML = processAutoEmbeds(marked.parse(text));
                 // Highlight code blocks if we had a highlighter (optional)
                 scrollToBottom();
                 
@@ -1265,6 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (activePersona) {
                 currentAgentName = activePersona.name;
+                updateModeSwitcherUI(activePersona.id);
                 
                 // Update Sidebar
                 if (nameDisplay) {
@@ -1305,4 +1458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to update brand name:', e);
         }
     }
+
+    // Initialization
+    updateBrandName();
 });

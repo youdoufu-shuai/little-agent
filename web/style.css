@@ -811,3 +811,156 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
 }
+
+/* Loading Bar Styles */
+.loading-bar-container {
+    width: 200px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin: 20px auto;
+    overflow: hidden;
+    position: relative;
+}
+
+.loading-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    animation: loadingProgress 2.5s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+@keyframes loadingProgress {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
+
+/* Light Mode Progress Bar */
+[data-theme="light"] .loading-bar-container {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .loading-bar {
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+/* Dark Mode Progress Bar */
+[data-theme="dark"] .loading-bar-container,
+:not([data-theme="light"]) .loading-bar-container {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .loading-bar,
+:not([data-theme="light"]) .loading-bar {
+    background: linear-gradient(90deg, #00f2ff, #0066ff);
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.6);
+}
+
+/* =========================================
+   Enhanced UI Components (User Requested)
+   ========================================= */
+
+/* 1. Unified Mode Switcher (Capsule Style) */
+.mode-switcher {
+    display: flex;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+    gap: 4px;
+}
+
+[data-theme="light"] .mode-switcher {
+    background-color: rgba(241, 245, 249, 0.8); /* Slate 100 */
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+.mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .mode-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Active State - Matches "New Chat" Primary Button Style */
+.mode-btn.active {
+    background-color: var(--accent-color);
+    color: white;
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
+    font-weight: 600;
+}
+
+.mode-btn.active:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Work Mode Special Styling (Unified Blue for consistency, but deeper tone optional) */
+/* Using same accent color ensures unity with "New Chat" button as requested */
+
+
+/* 2. Enhanced Theme Toggle (High Visibility) */
+.theme-toggle {
+    /* Override existing flat styles */
+    border-width: 0; 
+    background: var(--bg-secondary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    width: 44px; /* Slightly larger */
+    height: 44px;
+}
+
+/* Dark Mode (Show Sun) - Neon Amber Glow */
+[data-theme="dark"] .theme-toggle,
+:not([data-theme="light"]) .theme-toggle {
+    background: rgba(30, 41, 59, 0.6);
+    color: #fbbf24; /* Amber 400 */
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.15), inset 0 0 10px rgba(251, 191, 36, 0.05);
+}
+
+[data-theme="dark"] .theme-toggle:hover,
+:not([data-theme="light"]) .theme-toggle:hover {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fcd34d; /* Amber 300 */
+    transform: rotate(15deg) scale(1.1);
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.3), inset 0 0 15px rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.5);
+}
+
+/* Light Mode (Show Moon) - Deep Indigo Contrast */
+[data-theme="light"] .theme-toggle {
+    background: white;
+    color: #4f46e5; /* Indigo 600 */
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+    border: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+[data-theme="light"] .theme-toggle:hover {
+    background: #eef2ff; /* Indigo 50 */
+    color: #4338ca; /* Indigo 700 */
+    transform: rotate(-15deg) scale(1.1);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.35);
+}

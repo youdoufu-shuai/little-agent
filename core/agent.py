@@ -1,4 +1,5 @@
 import json
+import datetime
 from core.llm_client import LLMClient
 from core.vision_client import VisionClient
 from core.plato_client import PlatoClient
@@ -64,12 +65,20 @@ class PersonalAgent:
                 msg["tool_calls"] = m["tool_calls"]
             if "tool_call_id" in m:
                 msg["tool_call_id"] = m["tool_call_id"]
+            if "name" in m:
+                msg["name"] = m["name"]
             history_messages.append(msg)
         
         # 构建 LLM 消息
         # 获取活跃人格
         active_persona = self.persona_manager.get_active_persona()
-        system_content = active_persona["system_prompt"] if active_persona else "你是一个智能个人助手。"
+        base_system = active_persona["system_prompt"] if active_persona else "你是一个智能个人助手。"
+        
+        
+        current_time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 注入时间、计划指令
+        system_content = f"当前时间：{current_time_str}\n{base_system}\n\n[核心指令]\n1. 收到复杂需求时，必须先输出【执行计划】，再调用工具。\n2. 能够感知当前时间，对于时间敏感的查询（如新闻、热搜），请使用当前日期进行搜索。"
         
         if db_config:
             system_content += f"\n\n[MySQL配置信息]\nHost: {db_config.get('host')}\nPort: {db_config.get('port')}\nUser: {db_config.get('user')}\nPassword: {db_config.get('password')}\nDatabase: {db_config.get('database')}\n\n注意：上述配置是基础连接信息。\n1. 如果用户查询的是当前配置的数据库，直接使用上述所有参数。\n2. 如果用户查询的是**其他数据库**（例如 'test10'），请**保持 Host, Port, User, Password 不变**，仅将 'database' 参数修改为目标数据库名（例如 'test10'）。\n3. **严禁**为了查找数据库配置而浏览本地文件（如 list_directory, read_file），除非用户明确要求查看配置文件。直接尝试使用上述凭证连接。"
@@ -79,11 +88,48 @@ class PersonalAgent:
             "content": system_content
         }
         
-        # 使用最近 20 轮对话（为工具上下文增加）
-        messages = [system_prompt] + history_messages[-20:]
+        # 1. 先修复整个历史记录中的 tool name (针对 Gemini API 兼容性)
+        # Gemini 要求 tool 消息必须包含 name，且与之前的 function call 对应
+        # 必须在切片前修复，因为 tool_call 可能在切片范围之外
+        tool_id_to_name = {}
+        for msg in history_messages:
+            if msg.get("role") == "assistant" and "tool_calls" in msg:
+                for tc in msg["tool_calls"]:
+                    # tool_calls 在历史记录中是字典
+                    if isinstance(tc, dict):
+                        tid = tc.get("id")
+                        fname = tc.get("function", {}).get("name")
+                        if tid and fname:
+                            tool_id_to_name[tid] = fname
+            elif msg.get("role") == "tool" and ("name" not in msg or not msg["name"]):
+                tid = msg.get("tool_call_id")
+                if tid and tid in tool_id_to_name:
+                    msg["name"] = tool_id_to_name[tid]
+
+        # 2. 获取最近对话窗口
+        # 智能切片：确保切片以 User 消息开始，且不切断 Function Call 链
+        start_index = len(history_messages) - 20
+        if start_index < 0:
+            start_index = 0
+            
+        # 向前搜索最近的一个 User 消息作为起点
+        # 这样可以保证：
+        # 1. 满足 Gemini "User 消息开头" 的要求
+        # 2. 自动包含 User -> Assistant(Call) -> Tool(Response) 的完整链条
+        while start_index > 0 and history_messages[start_index].get("role") != "user":
+            start_index -= 1
+            
+        recent_messages = history_messages[start_index:]
+        
+        # 3. (已废弃) 之前的"检查切片边界完整性"逻辑
+        # 由于我们现在强制回溯到 User 消息，理论上不会再出现
+        # "切片以 Tool 开头" 或 "切片以 Assistant(Call) 开头" 的情况
+        # 除非历史记录本身就是坏的（例如第一条就是 Tool），那属于异常数据清洗范畴
+
+        messages = [system_prompt] + recent_messages
         
         # 工具执行循环
-        max_turns = 10  # 稍微增加最大轮数以避免过早失败
+        max_turns = message.get("max_steps", 10)
         current_turn = 0
         
         while current_turn < max_turns:
@@ -194,25 +240,27 @@ class PersonalAgent:
                         session_id,
                         "tool",
                         tool_result_truncated,
-                        tool_call_id=tool_call.id
+                        tool_call_id=tool_call.id,
+                        name=func_name
                     )
                     
                     # 添加到消息
                     messages.append({
                         "role": "tool",
                         "content": tool_result_truncated,
-                        "tool_call_id": tool_call.id
+                        "tool_call_id": tool_call.id,
+                        "name": func_name
                     })
-                
-                current_turn += 1
             else:
                 # 最终文本响应
                 response_text = llm_response.content
                 self.session_manager.add_message(session_id, "assistant", response_text)
                 break
 
-        if not response_text and current_turn >= max_turns:
-            response_text = "抱歉，由于任务过于复杂，我停止了思考（达到最大步骤限制）。"
+        finish_reason = "stop"
+        if current_turn >= max_turns and not response_text:
+            finish_reason = "length"
+            response_text = "任务执行步骤已达上限，是否继续？"
             self.session_manager.add_message(session_id, "assistant", response_text)
 
         # 4. 响应（Plato 后备）
@@ -220,5 +268,6 @@ class PersonalAgent:
         
         return {
             "response": response_text,
-            "session_id": session_id
+            "session_id": session_id,
+            "finish_reason": finish_reason
         }

@@ -71,6 +71,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     db_config: Optional[Dict[str, Any]] = None
     file_config: Optional[FileConfig] = None
+    max_steps: Optional[int] = 10
 
 class APIConfig(BaseModel):
     logic_base_url: Optional[str] = None
@@ -79,6 +80,49 @@ class APIConfig(BaseModel):
     vision_base_url: Optional[str] = None
     vision_api_key: Optional[str] = None
     vision_model: Optional[str] = None
+
+class PersonaActivateRequest(BaseModel):
+    persona_id: str
+
+class PersonaCreateRequest(BaseModel):
+    name: str
+    description: str
+    system_prompt: str
+
+@app.get("/api/personas")
+async def list_personas():
+    return agent.persona_manager.list_personas()
+
+@app.post("/api/personas")
+async def create_persona(request: PersonaCreateRequest):
+    try:
+        new_persona = agent.persona_manager.add_persona(
+            name=request.name,
+            description=request.description,
+            system_prompt=request.system_prompt
+        )
+        return new_persona
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/personas/activate")
+async def activate_persona(request: PersonaActivateRequest):
+    try:
+        agent.persona_manager.set_active_persona(request.persona_id)
+        return {"status": "success", "active_persona_id": request.persona_id}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@app.delete("/api/personas/{persona_id}")
+async def delete_persona(persona_id: str):
+    try:
+        success = agent.persona_manager.delete_persona(persona_id)
+        if success:
+            return {"status": "success"}
+        else:
+            raise HTTPException(status_code=404, detail="Persona not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/config")
 async def update_config(config: APIConfig):
@@ -158,7 +202,8 @@ async def chat_endpoint(request: ChatRequest):
             "text": request.text,
             "image": None,
             "db_config": request.db_config,
-            "file_config": request.file_config.dict() if request.file_config else None
+            "file_config": request.file_config.dict() if request.file_config else None,
+            "max_steps": request.max_steps
         }
         
         result = agent.process_message(message, session_id=request.session_id)

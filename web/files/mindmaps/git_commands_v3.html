@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindmap: git_commands_v3.html</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f4f4f9; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .mermaid { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-width: 600px; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+    <h1>Mindmap: git_commands_v3.html</h1>
+    <div class="mermaid">
+mindmap
+  root(("Git 常用命令"))
+    "配置与初始化"
+      "git init (初始化)"
+      "git clone (克隆)"
+      "git config (配置)"
+    "本地操作"
+      "git add (添加暂存)"
+      "git commit (提交)"
+      "git status (状态)"
+      "git diff (对比)"
+      "git rm (删除文件)"
+    "分支管理"
+      "git branch (分支列表/创建)"
+      "git checkout (切换/恢复)"
+      "git switch (切换)"
+      "git merge (合并)"
+      "git rebase (变基)"
+    "同步远程"
+      "git fetch (抓取)"
+      "git pull (拉取)"
+      "git push (推送)"
+      "git remote (远程管理)"
+    "历史与查看"
+      "git log (提交历史)"
+      "git show (详情)"
+      "git reflog (引用记录)"
+      "git blame (逐行查看)"
+    "撤销与救急"
+      "git reset (重置)"
+      "git revert (反做)"
+      "git stash (储藏)"
+      "git checkout -- [file] (舍弃修改)"
+    </div>
+</body>
+</html>

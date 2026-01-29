@@ -17,6 +17,9 @@
 
     <!-- SVG Icons Definitions -->
     <svg style="display: none;">
+        <symbol id="icon-briefcase" viewBox="0 0 512 512">
+            <path fill="currentColor" d="M128 480h256V80c0-26.5-21.5-48-48-48H176c-26.5 0-48 21.5-48 48v400zm64-384h128v32H192V96zm304 64H416V96c0-53-43-96-96-96H192c-53 0-96 43-96 96v64H16c-8.8 0-16 7.2-16 16v320c0 8.8 7.2 16 16 16h480c8.8 0 16-7.2 16-16V176c0-8.8-7.2-16-16-16z"/>
+        </symbol>
         <symbol id="icon-user" viewBox="0 0 448 512">
             <path fill="currentColor" d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"/>
         </symbol>
@@ -97,6 +100,16 @@
             <span id="agent-name-display">智能助理 Way</span>
         </div>
         
+        <!-- Mode Switcher -->
+        <div class="mode-switcher">
+            <button id="mode-daily" class="mode-btn active" title="日常模式：自然对话，轻松助手">
+                <svg class="icon"><use href="#icon-chat"></use></svg> 日常
+            </button>
+            <button id="mode-work" class="mode-btn" title="工作模式：严格执行，自我审查">
+                <svg class="icon"><use href="#icon-briefcase"></use></svg> 工作
+            </button>
+        </div>
+
         <div class="sidebar-actions">
              <button id="new-chat-btn" class="action-btn primary">
                 <svg class="icon"><use href="#icon-plus"></use></svg> 新建对话

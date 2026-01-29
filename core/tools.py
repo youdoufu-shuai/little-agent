@@ -512,7 +512,14 @@ def generate_document(filename: str, file_type: str, content: str, style_config:
         content_list = json.loads(content)
         style_dict = json.loads(style_config) if style_config else None
         
-        return DocumentGenerator.generate(filename, file_type, content_list, style_dict)
+        path = DocumentGenerator.generate(filename, file_type, content_list, style_dict)
+        
+        # Convert absolute path to relative URL for frontend access
+        # DocumentGenerator saves to web/files/documents
+        basename = os.path.basename(path)
+        url_path = f"/static/files/documents/{basename}"
+        
+        return f"Document generated. Download link: [{basename}]({url_path})"
     except Exception as e:
         return f"Error generating document: {str(e)}"
 
@@ -596,6 +603,24 @@ def run_python(code: str) -> str:
             os.remove(temp_file)
         return f"执行 Python 代码出错: {str(e)}"
 
+def generate_mindmap(filename: str, content: str) -> str:
+    """
+    Generates an HTML mindmap file using Mermaid.js.
+    
+    Args:
+        filename: The filename (e.g., 'idea_map').
+        content: The Mermaid syntax content.
+        
+    Returns:
+        The URL path to the generated file.
+    """
+    try:
+        from core.mindmap_generator import MindmapGenerator
+        path = MindmapGenerator.generate(filename, content)
+        return f"思维导图已生成。请点击链接查看: [查看思维导图]({path})"
+    except Exception as e:
+        return f"Error generating mindmap: {str(e)}"
+
 # LLM 的工具定义
 TOOLS_SCHEMA = [
     {
@@ -612,6 +637,27 @@ TOOLS_SCHEMA = [
                     }
                 },
                 "required": ["file_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_mindmap",
+            "description": "生成交互式思维导图 (HTML)。返回文件 URL。生成的 HTML 文件包含 Mermaid 图表。用户可以直接在界面上查看。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "保存的文件名（不带扩展名）。"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Mermaid 思维导图语法内容 (例如 'mindmap\\n root((Root))\\n Child')."
+                    }
+                },
+                "required": ["filename", "content"]
             }
         }
     },
@@ -915,5 +961,6 @@ AVAILABLE_TOOLS = {
     "get_weather": get_weather,
     "run_python": run_python,
     "analyze_image": analyze_image,
-    "generate_document": generate_document
+    "generate_document": generate_document,
+    "generate_mindmap": generate_mindmap
 }

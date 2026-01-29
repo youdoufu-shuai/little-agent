@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindmap: git_advanced_mindmap_v2.html</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f4f4f9; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .mermaid { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-width: 600px; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+    <h1>Mindmap: git_advanced_mindmap_v2.html</h1>
+    <div class="mermaid">
+mindmap
+  root(("Git 常用命令指南"))
+    "仓库初始化与配置"
+      "git init : 初始化本地仓库"
+      "git clone [url] : 克隆远程仓库"
+      "git config --global user.name '姓名' : 设置用户名"
+      "git config --global user.email '邮件' : 设置邮箱"
+    "日常开发流程"
+      "git status : 查看工作区状态"
+      "git add [file] : 将文件添加到暂存区"
+      "git add . : 添加所有修改到暂存区"
+      "git commit -m '消息' : 提交代码到本地仓库"
+      "git commit --amend : 修改最后一次提交说明"
+    "分支管理 (Branching)"
+      "git branch : 查看本地分支"
+      "git branch -a : 查看所有分支(含远程)"
+      "git checkout -b [name] : 创建并切换新分支"
+      "git switch [name] : 切换分支 (新语法)"
+      "git merge [name] : 合并指定分支到当前分支"
+      "git branch -d [name] : 删除已合并的分支"
+      "git rebase [base] : 变基操作"
+    "远程仓库交互"
+      "git remote -v : 查看远程仓库地址"
+      "git fetch : 从远程获取代码但不合并"
+      "git pull : 拉取远程代码并自动合并"
+      "git push [remote] [branch] : 推送代码到远程"
+      "git push --tags : 推送所有标签"
+    "撤销与版本回退"
+      "git checkout -- [file] : 丢弃工作区修改"
+      "git reset HEAD [file] : 撤销已添加(add)的文件"
+      "git reset --hard [commit] : 强制回退到指定版本"
+      "git revert [commit] : 撤销某次提交(生成新提交)"
+      "git stash : 暂存当前未提交的修改"
+      "git stash pop : 恢复并删除最近一次暂存"
+    "日志与查错"
+      "git log : 查看提交历史"
+      "git log --oneline : 精简查看历史"
+      "git reflog : 查看所有操作记录(找回丢失的提交)"
+      "git diff : 查看暂存区与工作区差异"
+      "git blame [file] : 查看文件每一行的作者"
+    "标签管理"
+      "git tag : 列出所有标签"
+      "git tag -a [v1.0] -m '说明' : 打标签"
+      "git show [tagname] : 查看标签详情"
+    </div>
+</body>
+</html>

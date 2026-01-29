@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindmap: git_commands_map_final.html</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f4f4f9; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .mermaid { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-width: 600px; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+    <h1>Mindmap: git_commands_map_final.html</h1>
+    <div class="mermaid">
+mindmap
+  root(("Git 命令大全"))
+    "基础设置"
+      "git init :: (初始化仓库)"
+      "git clone [url] :: (克隆远程仓库)"
+      "git config --global user.name \"Your Name\" :: (配置用户名)"
+    "本地开发"
+      "git status :: (查看状态)"
+      "git add [file] :: (追踪文件/暂存)"
+      "git commit -m \"msg\" :: (提交)"
+      "git diff :: (查看工作区差异)"
+    "分支管理"
+      "git branch :: (列出分支)"
+      "git checkout -b [name] :: (创建并切换分支)"
+      "git switch [name] :: (切换分支)"
+      "git merge [name] :: (合并分支)"
+      "git rebase [branch] :: (变基合并)"
+    "远程协作"
+      "git remote add origin [url] :: (关联远程库)"
+      "git fetch :: (下载远程更新)"
+      "git pull :: (拉取并合并)"
+      "git push origin [branch] :: (推送分支)"
+    "版本回退与撤销"
+      "git reset --hard [commit] :: (强制回退版本)"
+      "git revert [commit] :: (撤销某次提交)"
+      "git checkout -- [file] :: (丢弃工作区修改)"
+      "git stash :: (暂存当前工作现场)"
+    "查看历史"
+      "git log :: (提交历史)"
+      "git reflog :: (操作记录)"
+      "git show [commit] :: (查看某次提交详情)"
+    </div>
+</body>
+</html>
