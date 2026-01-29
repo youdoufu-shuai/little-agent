@@ -245,7 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const apiKey = document.getElementById('api-key').value.trim();
         const apiModel = document.getElementById('api-model').value.trim();
 
-        if (apiBaseUrl || apiKey || apiModel) {
+        const visionBaseUrl = document.getElementById('vision-base-url').value.trim();
+        const visionApiKey = document.getElementById('vision-api-key').value.trim();
+        const visionModel = document.getElementById('vision-model').value.trim();
+
+        if (apiBaseUrl || apiKey || apiModel || visionBaseUrl || visionApiKey || visionModel) {
             try {
                 const res = await fetch('/api/config', {
                     method: 'POST',
@@ -253,7 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         logic_base_url: apiBaseUrl || null,
                         logic_api_key: apiKey || null,
-                        logic_model: apiModel || null
+                        logic_model: apiModel || null,
+                        vision_base_url: visionBaseUrl || null,
+                        vision_api_key: visionApiKey || null,
+                        vision_model: visionModel || null
                     })
                 });
                 

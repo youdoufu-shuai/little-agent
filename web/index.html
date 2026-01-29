@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人智能代理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=1.6">
     <script src="marked.min.js"></script>
 </head>
@@ -189,7 +192,7 @@
             <span class="close-modal">&times;</span>
             <h2><svg class="icon"><use href="#icon-user-gear"></use></svg> 人设管理</h2>
             
-            <div id="personas-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;">
+            <div id="personas-list" style="margin-bottom: 20px;">
                 <!-- Persona Items -->
             </div>
 
@@ -322,7 +325,7 @@
                 input:checked + .slider:before { transform: translateX(16px); }
             </style>
             
-            <h3 style="margin-top: 20px; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">AI API 配置</h3>
+            <h3 style="margin-top: 20px; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">逻辑模型配置 (Logic Model)</h3>
             <div class="form-group" style="margin-top: 10px;">
                 <label style="display: block; margin-bottom: 5px; font-weight: 500;">Base URL</label>
                 <input type="text" id="api-base-url" placeholder="https://api.openai.com/v1" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
@@ -333,11 +336,25 @@
             </div>
             <div class="form-group" style="margin-top: 10px;">
                 <label style="display: block; margin-bottom: 5px; font-weight: 500;">Model</label>
-                <input type="text" id="api-model" placeholder="例如: gemini-1.5-pro" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
+                <input type="text" id="api-model" placeholder="例如: gemini-2.0-flash-thinking-exp" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
+            </div>
+
+            <h3 style="margin-top: 20px; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">视觉/绘图模型配置 (Vision/Image Model)</h3>
+            <div class="form-group" style="margin-top: 10px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Base URL</label>
+                <input type="text" id="vision-base-url" placeholder="https://api.openai.com/v1" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 500;">API Key</label>
+                <input type="password" id="vision-api-key" placeholder="sk-..." style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Model</label>
+                <input type="text" id="vision-model" placeholder="例如: gemini-1.5-pro" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
             </div>
 
             <h3 style="margin-top: 20px; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">路径白名单</h3>
-            <p style="font-size: 0.8rem; color: #888; margin-top: 5px;">允许代理访问的绝对路径列表 (每行一个)</p>
+            <p style="font-size: 0.8rem; color: #888; margin-top: 5px;">允许代理访问的绝对路径列表 (每行一个，不填则默认允许访问所有常用路径)</p>
             <textarea id="whitelist-paths" rows="4" placeholder="/Users/username/project" style="width: 100%; margin-top: 10px; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); font-family: monospace;"></textarea>
 
             <div style="margin-top: 20px; text-align: right;">

@@ -76,6 +76,9 @@ class APIConfig(BaseModel):
     logic_base_url: Optional[str] = None
     logic_api_key: Optional[str] = None
     logic_model: Optional[str] = None
+    vision_base_url: Optional[str] = None
+    vision_api_key: Optional[str] = None
+    vision_model: Optional[str] = None
 
 @app.post("/api/config")
 async def update_config(config: APIConfig):
@@ -87,7 +90,7 @@ async def update_config(config: APIConfig):
         from config import Config
         import re
 
-        # 更新运行时配置
+        # 更新运行时配置 (Logic)
         if config.logic_base_url:
             os.environ["LOGIC_BASE_URL"] = config.logic_base_url
             Config.LOGIC_BASE_URL = config.logic_base_url
@@ -97,6 +100,17 @@ async def update_config(config: APIConfig):
         if config.logic_model:
             os.environ["LOGIC_MODEL"] = config.logic_model
             Config.LOGIC_MODEL = config.logic_model
+
+        # 更新运行时配置 (Vision)
+        if config.vision_base_url:
+            os.environ["VISION_BASE_URL"] = config.vision_base_url
+            Config.VISION_BASE_URL = config.vision_base_url
+        if config.vision_api_key:
+            os.environ["VISION_API_KEY"] = config.vision_api_key
+            Config.VISION_API_KEY = config.vision_api_key
+        if config.vision_model:
+            os.environ["VISION_MODEL"] = config.vision_model
+            Config.VISION_MODEL = config.vision_model
 
         # 尝试更新 .env 文件
         env_path = ".env"
@@ -118,6 +132,10 @@ async def update_config(config: APIConfig):
             env_content = update_env_var(env_content, "LOGIC_BASE_URL", config.logic_base_url)
             env_content = update_env_var(env_content, "LOGIC_API_KEY", config.logic_api_key)
             env_content = update_env_var(env_content, "LOGIC_MODEL", config.logic_model)
+            
+            env_content = update_env_var(env_content, "VISION_BASE_URL", config.vision_base_url)
+            env_content = update_env_var(env_content, "VISION_API_KEY", config.vision_api_key)
+            env_content = update_env_var(env_content, "VISION_MODEL", config.vision_model)
             
             with open(env_path, "w", encoding="utf-8") as f:
                 f.write(env_content)
