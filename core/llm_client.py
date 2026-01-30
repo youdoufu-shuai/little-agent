@@ -41,3 +41,28 @@ class LLMClient:
         except Exception as e:
             print(f"Error calling Logic API: {e}")
             return None
+
+    def chat_stream(self, messages, tools=None):
+        """
+        Stream a chat completion request.
+        Yields chunks of the response.
+        """
+        if not self.client:
+            yield None
+            return
+
+        try:
+            params = {
+                "model": self.model,
+                "messages": messages,
+                "stream": True
+            }
+            if tools:
+                params["tools"] = tools
+                
+            stream = self.client.chat.completions.create(**params)
+            for chunk in stream:
+                yield chunk
+        except Exception as e:
+            print(f"Error calling Logic API (Stream): {e}")
+            yield None

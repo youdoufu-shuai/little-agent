@@ -1039,9 +1039,6 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('file', currentImage);
         }
 
-        const endpoint = currentImage ? '/api/vision' : '/api/chat';
-        let options = {};
-
         // Setup AbortController
         if (abortController) abortController.abort(); // Cancel previous if any
         abortController = new AbortController();
@@ -1051,77 +1048,164 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stopBtn) stopBtn.style.display = 'flex';
         startTimer();
 
+        // --- Logic Branch: Image (Legacy) vs Text (Streaming) ---
+
         if (currentImage) {
-            options = {
+            // Legacy Path for Vision
+            const endpoint = '/api/vision';
+            const options = {
                 method: 'POST',
                 body: formData,
                 signal: abortController.signal
             };
-        } else {
-            // For JSON endpoint
-            const payload = { text: text };
-            if (currentSessionId) payload.session_id = currentSessionId;
-            if (dbConfig) payload.db_config = JSON.parse(dbConfig);
-            if (fileConfig) payload.file_config = fileConfig;
             
-            options = {
+            currentImage = null;
+            imageUpload.value = ''; 
+
+            try {
+                const response = await fetch(endpoint, options);
+                const data = await response.json();
+                
+                removeLoading(loadingId);
+                
+                if (data.response) {
+                    appendMessage('agent', data.response, null, true);
+                }
+                
+                if (data.session_id) {
+                    currentSessionId = data.session_id;
+                }
+                loadHistory();
+
+            } catch (error) {
+                removeLoading(loadingId);
+                if (error.name !== 'AbortError') {
+                    console.error('Error:', error);
+                    appendMessage('agent', '错误: 无法连接到代理系统。');
+                }
+            } finally {
+                sendBtn.style.display = 'flex';
+                if (stopBtn) stopBtn.style.display = 'none';
+                stopTimer();
+                abortController = null;
+            }
+            return;
+        }
+
+        // Streaming Path for Text
+        currentImage = null;
+        imageUpload.value = '';
+        
+        const payload = { 
+            text: text,
+            session_id: currentSessionId,
+            db_config: dbConfig ? JSON.parse(dbConfig) : null,
+            file_config: fileConfig,
+            max_steps: 20
+        };
+
+        try {
+            const response = await fetch('/api/chat/stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
                 signal: abortController.signal
-            };
-        }
+            });
 
-        currentImage = null;
-        imageUpload.value = ''; // Reset file input
-
-        try {
-            const response = await fetch(endpoint, options);
-            const data = await response.json();
-            
             removeLoading(loadingId);
             
-            if (data.response) {
-                appendMessage('agent', data.response, null, true); // Enable animation
-            }
+            // Create placeholder for streaming content
+            appendMessage('agent', ''); 
+            const messages = document.querySelectorAll('.message.agent');
+            const lastMsg = messages[messages.length - 1];
+            const contentDiv = lastMsg.querySelector('.message-content');
+            contentDiv.innerHTML = ''; // Clear "Executing..." placeholder if any
 
-            if (data.finish_reason === 'length') {
-                setTimeout(() => {
-                    if (confirm("任务执行步骤已达上限，是否继续执行剩余计划？")) {
-                        handleContinue(data.session_id);
-                    }
-                }, 500);
+            const fullText = await readStream(response.body.getReader(), contentDiv, (event) => {
+                if (event.session_id) currentSessionId = event.session_id;
+                if (event.finish_reason === 'length') {
+                    setTimeout(() => {
+                        if (confirm("任务执行步骤已达上限，是否继续执行剩余计划？")) {
+                            handleContinue(currentSessionId);
+                        }
+                    }, 500);
+                }
+            });
+            
+            // Auto-TTS for streaming response
+            if (autoTtsToggle && autoTtsToggle.checked && fullText) {
+                speakText(fullText);
             }
             
-            // Update session ID if newly created
-            if (data.session_id) {
-                if (currentSessionId !== data.session_id) {
-                    currentSessionId = data.session_id;
-                    loadHistory(); // Refresh list to show new chat
-                } else {
-                    // Just refresh title maybe? For now just refresh list occasionally or rely on next reload
-                    // To keep it simple, we refresh history list on every message to update timestamps/titles
-                    loadHistory(); 
-                }
-            }
+            loadHistory(); 
 
         } catch (error) {
             removeLoading(loadingId);
-            if (error.name === 'AbortError') {
-                console.log('Request aborted by user');
-                // Optional: Append a small note saying "Cancelled"
-                // appendMessage('system', '已停止生成');
-            } else {
+            if (error.name !== 'AbortError') {
                 console.error('Error:', error);
-                appendMessage('agent', '错误: 无法连接到代理系统。');
+                appendMessage('agent', '错误: 连接断开或发生异常。');
             }
         } finally {
-            // Reset UI
             sendBtn.style.display = 'flex';
             if (stopBtn) stopBtn.style.display = 'none';
             stopTimer();
             abortController = null;
         }
+    }
+
+    // Helper for SSE Stream Reading
+    async function readStream(reader, contentDiv, onMeta) {
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let markdownBuffer = '';
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop(); 
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const dataStr = line.slice(6);
+                    if (dataStr === '[DONE]') return;
+                    
+                    try {
+                        const event = JSON.parse(dataStr);
+                        
+                        if (event.type === 'content') {
+                            markdownBuffer += event.content;
+                            contentDiv.innerHTML = processAutoEmbeds(marked.parse(markdownBuffer));
+                            scrollToBottom();
+                        } else if (event.type === 'tool_start') {
+                            const toolInfo = document.createElement('div');
+                            toolInfo.className = 'tool-indicator';
+                            toolInfo.style.cssText = 'font-size:0.85em; color:#666; margin-top:5px; padding:4px 8px; background:rgba(0,0,0,0.05); border-radius:4px;';
+                            toolInfo.textContent = `⚡ 调用工具: ${event.tool}...`;
+                            contentDiv.appendChild(toolInfo);
+                            scrollToBottom();
+                        } else if (event.type === 'tool_result') {
+                             const indicators = contentDiv.querySelectorAll('.tool-indicator');
+                             if(indicators.length > 0) {
+                                 const last = indicators[indicators.length - 1];
+                                 last.textContent += ' ✓';
+                                 setTimeout(() => last.remove(), 1000);
+                             }
+                        } else if (event.type === 'meta') {
+                            if (onMeta) onMeta(event);
+                        } else if (event.type === 'error') {
+                            markdownBuffer += `\n\n> **Error**: ${event.content}`;
+                            contentDiv.innerHTML = processAutoEmbeds(marked.parse(markdownBuffer));
+                        }
+                    } catch (e) {
+                        console.error('Error parsing SSE event:', e);
+                    }
+                }
+            }
+        }
+        return markdownBuffer;
     }
 
     async function handleContinue(sessionId) {
@@ -1228,9 +1312,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="display:flex; align-items:center; gap:8px;">
                         <img src="${logoSrc}" class="agent-avatar"> ${currentAgentName}
                     </div>
-                    <button class="copy-btn" title="复制内容">
-                        <svg class="icon" style="width:14px; height:14px;"><use href="#icon-copy"></use></svg>
-                    </button>
+                    <div style="display:flex; gap:5px;">
+                        <button class="speak-btn" title="朗读">
+                             <svg class="icon" style="width:14px; height:14px;"><use href="#icon-volume-high"></use></svg>
+                        </button>
+                        <button class="copy-btn" title="复制内容">
+                            <svg class="icon" style="width:14px; height:14px;"><use href="#icon-copy"></use></svg>
+                        </button>
+                    </div>
                 </div>`;
         } else {
             contentHtml = `
@@ -1261,10 +1350,28 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.appendChild(contentDiv);
         chatContainer.appendChild(msgDiv);
 
+        // Speak functionality
+        const speakBtn = msgDiv.querySelector('.speak-btn');
+        if (speakBtn) {
+            speakBtn.addEventListener('click', () => {
+                // Get text from contentDiv (stripping HTML tags implies we use innerText)
+                // But we should use the original text if available? 
+                // For streaming, text is '', so we rely on current content.
+                // For markdown rendered content, innerText is good enough for speech.
+                speakText(contentDiv.innerText);
+            });
+        }
+
         // Copy functionality
         const copyBtn = msgDiv.querySelector('.copy-btn');
-        if (copyBtn && text) {
+        if (copyBtn) {
+            // Use text if available, otherwise fallback to innerText
+            // For streaming, we might want to grab the latest content dynamically if 'text' was empty initially
+            const textToCopy = text || contentDiv.innerText;
+            
             copyBtn.addEventListener('click', () => {
+                // Refresh text from DOM if it was a stream
+                const currentText = text || contentDiv.innerText;
                 // Function to perform fallback copy (must be synchronous for execCommand)
                 const performFallbackCopy = () => {
                     try {

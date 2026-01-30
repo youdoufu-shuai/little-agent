@@ -19,4 +19,9 @@ ENV/
 data/sessions/
 
 # Generated Content
-web/images/
+web/images/ai_generated/
+web/files/mindmaps/
+web/files/documents/
+
+# OS
+.DS_Store

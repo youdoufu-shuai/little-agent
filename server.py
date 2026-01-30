@@ -5,7 +5,7 @@ import io
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -208,6 +208,31 @@ async def chat_endpoint(request: ChatRequest):
         
         result = agent.process_message(message, session_id=request.session_id)
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/chat/stream")
+async def chat_stream_endpoint(request: ChatRequest):
+    try:
+        message = {
+            "chat_id": "web-user",
+            "text": request.text,
+            "image": None,
+            "db_config": request.db_config,
+            "file_config": request.file_config.dict() if request.file_config else None,
+            "max_steps": request.max_steps
+        }
+        
+        def event_generator():
+            try:
+                for event in agent.process_message_stream(message, session_id=request.session_id):
+                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+            except Exception as e:
+                err_event = {"type": "error", "content": str(e)}
+                yield f"data: {json.dumps(err_event, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
