@@ -17,10 +17,12 @@ class MindmapGenerator:
         lines = content.split('\n')
         sanitized_lines = []
         
-        # Regex to decompose a shape definition: id + open + content + close
-        # e.g. root((Text)) -> id=root, open=((, content=Text, close=))
-        # We look for the first occurrence of an opener after a non-space ID
-        shape_regex = re.compile(r'^(\S+?)((?:[\[\(\{\<]+|[\)a-zA-Z]+[\(\[\{\<]+))(.+)((?:[\)\]\}\>]+))$')
+        # Regex to capture ID and Opener only
+        # We will determine Closer based on Opener and strip it from the end
+        start_regex = re.compile(r'^([^\[\(\{\)\s]+)([\[\(\{\)]+)')
+        
+        # Counter for auto-generated IDs to ensure unique nodes
+        node_counter = 0
         
         for line in lines:
             if not line.strip():
@@ -31,26 +33,22 @@ class MindmapGenerator:
             indent = indent_match.group(1) if indent_match else ""
             text = line.strip()
             
+            # Replace '::' with ':' to avoid Mermaid class syntax conflict
+            text = text.replace('::', ':')
+            
             if text == 'mindmap':
                 sanitized_lines.append(line)
                 continue
                 
-            # Try to match shape definition
-            match = shape_regex.match(text)
+            # Try to match shape definition start
+            match = start_regex.match(text)
+            is_valid_shape = False
             
             if match:
                 node_id = match.group(1)
                 opener = match.group(2)
-                inner_text = match.group(3)
-                closer = match.group(4)
                 
-                # Check if inner_text is already quoted
-                if inner_text.startswith('"') and inner_text.endswith('"'):
-                    safe_text = inner_text
-                else:
-                    safe_text = f'"{inner_text.replace("\"", "\\\"")}"'
-                
-                # Enforce correct closer based on opener
+                # Determine expected closer
                 if opener == '((':
                     closer = '))'
                 elif opener == '(':
@@ -59,17 +57,49 @@ class MindmapGenerator:
                     closer = ']'
                 elif opener == '{':
                     closer = '}'
+                elif opener == '{{':
+                    closer = '}}'
                 elif opener == ')':
                     closer = '('
-                
-                sanitized_lines.append(f'{indent}{node_id}{opener}{safe_text}{closer}')
-            else:
-                # Not a shape definition, treat as plain text node
-                if text.startswith('"') and text.endswith('"'):
-                    sanitized_lines.append(line)
+                elif opener == '))':
+                    closer = '(('
                 else:
-                    safe_text = text.replace('"', '\\"')
-                    sanitized_lines.append(f'{indent}"{safe_text}"')
+                    if opener.startswith('('): closer = ')' * len(opener)
+                    elif opener.startswith('['): closer = ']' * len(opener)
+                    elif opener.startswith('{'): closer = '}' * len(opener)
+                    else: closer = ''
+
+                # Check if text ends with expected closer
+                if closer and text.endswith(closer):
+                    # Extract content
+                    start_idx = len(node_id) + len(opener)
+                    end_idx = -len(closer)
+                    inner_text = text[start_idx:end_idx]
+                    
+                    # Check if inner_text is already quoted
+                    if inner_text.startswith('"') and inner_text.endswith('"'):
+                        safe_text = inner_text
+                    else:
+                        # Replace double quotes with single quotes to avoid Mermaid syntax errors
+                        safe_text = f'"{inner_text.replace("\"", "\'")}"'
+                        
+                    sanitized_lines.append(f'{indent}{node_id}{opener}{safe_text}{closer}')
+                    is_valid_shape = True
+            
+            if not is_valid_shape:
+                # Not a valid shape definition, treat as plain text node with auto-ID
+                node_counter += 1
+                auto_id = f"n{node_counter}"
+                
+                # Check if text is already quoted
+                if text.startswith('"') and text.endswith('"'):
+                    inner_text = text[1:-1]
+                else:
+                    inner_text = text
+                    
+                # Replace double quotes with single quotes to avoid Mermaid syntax errors
+                safe_text = inner_text.replace('"', "'")
+                sanitized_lines.append(f'{indent}{auto_id}["{safe_text}"]')
                     
         return '\n'.join(sanitized_lines)
 
